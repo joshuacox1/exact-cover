@@ -8,7 +8,7 @@ mod output;
 mod node;
 mod solver;
 
-pub use errors::ExactCoverError;
+pub use errors::ProblemError;
 pub use iterators::{ExactCoverSolutionIter, ExactCoverStepIter};
 pub use output::{Solution, SolverStep};
 pub use solver::ExactCoverSolver;

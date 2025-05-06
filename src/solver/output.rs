@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use super::ExactCoverSolver;
+
 /// A solution of the solver, consisting of a strictly increasing
 /// (?! TODO check) list of row indices constituting an exact cover.
 pub struct Solution(

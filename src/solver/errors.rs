@@ -3,7 +3,7 @@
 /// 
 /// The solver checks that the problem is well-formed before attempting
 /// to solve it.
-pub enum ExactCoverError {
+pub enum ProblemError {
     /// A Vec has been provided whose length was inconsistent with
     /// the number of columns claimed.
     IncorrectRowLength {

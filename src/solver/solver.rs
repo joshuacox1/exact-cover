@@ -1,7 +1,7 @@
 use super::iterators::{ExactCoverSolutionIter, ExactCoverStepIter};
 use super::output::{Solution, SolverStep};
 use super::node::Node;
-use super::ExactCoverError;
+use super::ProblemError;
 
 /// An exact cover solver.
 /// 
@@ -24,8 +24,8 @@ pub struct ExactCoverSolver {
     /// to add 2^S solutions, one for each subset of empty rows.
     /// TODO: of course test this.
     empty_rows: Vec<usize>,
-    solution_count: u64,
-    step_count: u64,
+    solution_counter: u64,
+    step_counter: u64,
 }
 
 // A generic value for unused values.
@@ -33,41 +33,55 @@ const UNUSED: usize = 0;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
-    pub fn from_2d_array<const M: usize, const N: usize> (
-        array2d: [[bool; N]; M],
-        num_cols: usize,
-        num_primary_cols: Option<usize>,
-    ) {
-        unimplemented!()
+    /// Creates an exact cover solver from a 2D boolean array. The number
+    /// of primary columns is inferred as `COLUMNS - secondary_cols`.
+    /// 
+    /// Returns an error if and only if `secondary_cols > COLUMNS`.
+    pub fn from_array_2d<const ROWS: usize, const COLUMNS: usize> (
+        array2d: [[bool; COLUMNS]; ROWS],
+        secondary_cols: usize,
+    ) -> Result<Self, ProblemError> {
+        if secondary_cols > COLUMNS {
+            Err(ProblemError::IncorrectRowLength {
+                row_index: 0,
+                bad_length: secondary_cols,
+            })
+        } else {
+            let ones = array2d.iter()
+                .map(|row| row.iter()
+                    .enumerate()
+                    .filter_map(|(i, b)| b.then_some(i)))
+                .collect::<Vec<_>>();
+            Self::from_ones(ones.into_iter(), COLUMNS-secondary_cols, secondary_cols)
+        }
     }
 
-    /// Creates an exact cover solver from a matrix. Each `Vec` contains
-    /// a bool.
-    /// 
-    /// Every constituent `Vec` of matrix must be of length `num_cols`.
-    /// Returns an error if this is not satisfied. We must also have
-    /// `num_primary_cols` <= `num_cols`.
-    pub fn from_matrix(
+    /// Creates an exact cover solver from a `Vec` of `Vec` rows.
+    ///
+    /// Every constituent `Vec` of matrix must be of the same length,
+    /// which is taken to be the number of columns in total. If 
+    /// `primary_cols`
+    pub fn from_vec_2d(
         matrix: Vec<Vec<bool>>,
-        num_cols: usize,
-        num_primary_cols: Option<usize>,
-    ) -> Result<Self, ExactCoverError> {
-        let ones = Self::matrix_to_ones(&matrix, num_cols)?;
-        Self::from_ones(ones.into_iter(), num_cols, num_primary_cols)
+        primary_cols: usize,
+        secondary_cols: usize,
+    ) -> Result<Self, ProblemError> {
+        let ones = Self::vec_2d_to_ones(&matrix, primary_cols+secondary_cols)?;
+        Self::from_ones(ones.into_iter(), primary_cols, secondary_cols)
     }
 
     /// Turns a matrix of booleans into a Vec of iterators of indices where
     /// the `true` values were.
-    fn matrix_to_ones(
+    fn vec_2d_to_ones(
         matrix: &[Vec<bool>],
         num_cols: usize)
-    -> Result<Vec<impl Iterator<Item = usize>>, ExactCoverError> {
+    -> Result<Vec<impl Iterator<Item = usize>>, ProblemError> {
         matrix.iter()
             .enumerate()
             .map(|(j, row)| {
                 let l = row.len();
                 if l != num_cols {
-                    Err(ExactCoverError::IncorrectRowLength {
+                    Err(ProblemError::IncorrectRowLength {
                         row_index: j,
                         bad_length: l,
                     })
@@ -84,13 +98,10 @@ impl ExactCoverSolver {
     /// of indices where 1s lie.
     pub fn from_ones(
         ones: impl Iterator<Item = impl Iterator<Item = usize>>,
-        num_cols: usize,
-        num_primary_cols: Option<usize>,
-    ) -> Result<Self, ExactCoverError> {
-        let num_primary_cols = num_primary_cols.unwrap_or(num_cols);
-        if num_primary_cols > num_cols {
-            return Err(ExactCoverError::BadPrimaryColumnCount);
-        }
+        primary_cols: usize,
+        secondary_cols: usize,
+    ) -> Result<Self, ProblemError> {
+        let num_cols = primary_cols + secondary_cols;
 
         // The root node lives at index 0 of the node list.
         // If there are any columns, right should point at the first one.
@@ -110,8 +121,8 @@ impl ExactCoverSolver {
         // All col headers point up and down to themselves for now and set size to 0.
         for c in 0..num_cols {
             let col_header = Node {
-                left: if c < num_primary_cols { c } else { c+1 },
-                right: if c < num_primary_cols { c+2 } else { c+1 },
+                left: if c < primary_cols { c } else { c+1 },
+                right: if c < primary_cols { c+2 } else { c+1 },
                 up: c+1,
                 down: c+1,
                 col: c+1,
@@ -122,7 +133,7 @@ impl ExactCoverSolver {
         }
 
         // The last primary column's right wraps around to head.
-        nodes[num_primary_cols].right = 0;
+        nodes[primary_cols].right = 0;
 
         let mut empty_rows = vec![];
         for (i, row) in ones.enumerate() {
@@ -130,7 +141,7 @@ impl ExactCoverSolver {
 
             for j in row {
                 if j > num_cols {
-                    return Err(ExactCoverError::OutOfRangeColumn {
+                    return Err(ProblemError::OutOfRangeColumn {
                         row_index: i,
                         bad_col_index: j,
                     });
@@ -181,8 +192,8 @@ impl ExactCoverSolver {
             // think about this... extending as appropriate...
             o_for_reporting: vec![],
             empty_rows,
-            solution_count: 0,
-            step_count: 0,
+            solution_counter: 0,
+            step_counter: 0,
         })
     }
 
@@ -193,22 +204,38 @@ impl ExactCoverSolver {
         unimplemented!()
     }
 
-    /// Return the next solution, or None if there are no more solutions.
+    /// The current partial solution, i.e. the solver's current row stack.
+    pub fn current_partial_solution(&self) -> Vec<usize> {
+        unimplemented!()
+    }
+
+    /// The current subset of columns under consideration.
+    pub fn current_columns(&self) -> Vec<usize> {
+        unimplemented!()
+    }
+
+    /// The current subset of rows under consideration.
+    pub fn current_rows(&self) -> Vec<usize> {
+        // blast, it's going to take extra book-keeping to get the rows.
+        unimplemented!()
+    }
+
+    /// Return the next solution if there are any remaining.
     pub fn next_solution(&mut self) -> Option<Solution> {
         unimplemented!()
     }
 
-    /// Return the next solver step.
+    /// Return the next solver step if there are any remaining to take.
     pub fn next_step(&mut self) -> Option<SolverStep> {
         unimplemented!()
     }
 
-    /// Returns an iterator through solutions.
+    /// Returns an iterator through remaining solutions.
     pub fn iter_solutions(&mut self) -> ExactCoverSolutionIter {
         ExactCoverSolutionIter { solver: self }
     }
 
-    /// Returns an iterator through solver steps.
+    /// Returns an iterator through remaining solver steps.
     pub fn iter_steps(&mut self) -> ExactCoverStepIter {
         ExactCoverStepIter { solver: self }
     }
@@ -290,13 +317,9 @@ impl ExactCoverSolver {
         self.x[l].right = c;
     }
 
-    /// The number of empty columns in the problem provided to the
-    /// exact cover solver. n of these will bloat the number of solutions
-    /// by 2^n.
-    pub fn solution_count(&self) -> u64 { self.solution_count }
+    /// The number of solutions seen so far.
+    pub fn solution_counter(&self) -> u64 { self.solution_counter }
 
-    /// The number of empty columns in the problem provided to the
-    /// exact cover solver. n of these will bloat the number of solutions
-    /// by 2^n.
-    pub fn step_count(&self) -> u64 { self.step_count }
+    /// The number of solver steps performed so far.
+    pub fn step_counter(&self) -> u64 { self.step_counter }
 }
