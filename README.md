@@ -1,11 +1,11 @@
 # Description
 
-A fast solver for exact cover problems. Uses the dancing links technique
+An extremely fast, efficient solver for the generalised exact cover problem.
 
-- Written efficiently in a fast programming language with no garbage collector (Rust).
-- Has an ergonomic interface supporting strict or lazy input.
+- Written in a fast programming language with no garbage collector.
+- Uses efficient methods (Algorithm X with the &ldquo;dancing links&rdquo; technique representing the grid as a torus of circular doubly-linked lists).
 - Solves the generalised exact cover problem (i.e. supports optional secondary constraints).
-- Written as a state machine so it can yield solutions like an iterator.
-- Has modes that yield internal solver state and decisions made. This can be used to display.
+- Written in a generator style so the solver can be started and stopped.
+- Presents a notion of a solver &ldquo;step&rdquo; and methods to advance a step, advance to the next solution, and so on.
 
-The solver uses the [dancing links](https://en.wikipedia.org/wiki/Dancing_Links) technique.
+The solver uses the [dancing links](https://en.wikipedia.org/wiki/Dancing_Links) technique.;
