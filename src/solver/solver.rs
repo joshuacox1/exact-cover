@@ -36,15 +36,16 @@ impl ExactCoverSolver {
     /// Creates an exact cover solver from a 2D boolean array. The number
     /// of primary columns is inferred as `COLUMNS - secondary_cols`.
     /// 
-    /// Returns an error if and only if `secondary_cols > COLUMNS`.
+    /// Succeeds if `secondary_cols > COLUMNS`. Otherwise returns
+    /// a `ProblemError::InconsistentColumnCount`.
     pub fn from_array_2d<const ROWS: usize, const COLUMNS: usize> (
         array2d: [[bool; COLUMNS]; ROWS],
         secondary_cols: usize,
     ) -> Result<Self, ProblemError> {
         if secondary_cols > COLUMNS {
-            Err(ProblemError::IncorrectRowLength {
-                row_index: 0,
-                bad_length: secondary_cols,
+            Err(ProblemError::InconsistentColumnCount {
+                bad_row: 0,
+                bad_col: secondary_cols,
             })
         } else {
             let ones = array2d.iter()
@@ -58,32 +59,31 @@ impl ExactCoverSolver {
 
     /// Creates an exact cover solver from a `Vec` of `Vec` rows.
     ///
-    /// Every constituent `Vec` of matrix must be of the same length,
-    /// which is taken to be the number of columns in total. If 
-    /// `primary_cols`
+    /// Succeeds if and only the length of every `Vec` in `vec2d` is equal
+    /// to `primary_cols+secondary_cols`.
     pub fn from_vec_2d(
-        matrix: Vec<Vec<bool>>,
+        vec2d: Vec<Vec<bool>>,
         primary_cols: usize,
         secondary_cols: usize,
     ) -> Result<Self, ProblemError> {
-        let ones = Self::vec_2d_to_ones(&matrix, primary_cols+secondary_cols)?;
+        let ones = Self::vec_2d_to_ones(&vec2d, primary_cols+secondary_cols)?;
         Self::from_ones(ones.into_iter(), primary_cols, secondary_cols)
     }
 
     /// Turns a matrix of booleans into a Vec of iterators of indices where
     /// the `true` values were.
     fn vec_2d_to_ones(
-        matrix: &[Vec<bool>],
+        vec2d: &[Vec<bool>],
         num_cols: usize)
     -> Result<Vec<impl Iterator<Item = usize>>, ProblemError> {
-        matrix.iter()
+        vec2d.iter()
             .enumerate()
             .map(|(j, row)| {
                 let l = row.len();
                 if l != num_cols {
-                    Err(ProblemError::IncorrectRowLength {
-                        row_index: j,
-                        bad_length: l,
+                    Err(ProblemError::InconsistentColumnCount {
+                        bad_row: j,
+                        bad_col: l,
                     })
                 } else {
                     Ok(row.iter()
@@ -141,9 +141,9 @@ impl ExactCoverSolver {
 
             for j in row {
                 if j > num_cols {
-                    return Err(ProblemError::OutOfRangeColumn {
-                        row_index: i,
-                        bad_col_index: j,
+                    return Err(ProblemError::InconsistentColumnCount {
+                        bad_row: i,
+                        bad_col: j,
                     });
                 }
                 let new_index = nodes.len();

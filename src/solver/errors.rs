@@ -1,21 +1,17 @@
 
 /// An error in the specification of the exact cover problem.
 /// 
-/// The solver checks that the problem is well-formed before attempting
-/// to solve it.
+/// As the exact cover problem is well-defined on _all_ boolean
+/// matrices, even those of zero length or width, the only errors
+/// that can occur do so due to straightforward reasons like
+/// inconsistent array bounds.
 pub enum ProblemError {
-    /// A Vec has been provided whose length was inconsistent with
-    /// the number of columns claimed.
-    IncorrectRowLength {
-        row_index: usize,
-        bad_length: usize,
-    },
-    /// The number of primary columns stated was greater than the number
-    /// of columns.
-    BadPrimaryColumnCount,
-    /// An index for a 1 was given which lies outside of [0, ..., num_cols-1].
-    OutOfRangeColumn {
-        row_index: usize,
-        bad_col_index: usize,
+    /// A column index or count has been provided which is inconsistent
+    /// with the stated column count.
+    InconsistentColumnCount {
+        /// The first row index at which this problem arose.
+        bad_row: usize,
+        /// The offending column index.
+        bad_col: usize,
     },
 }

@@ -10,7 +10,7 @@ use super::solver::ExactCoverSolver;
 use super::output::{Solution, SolverStep};
 
 /// An iterator over the remaining solutions from the state of
-/// an ExactCoverSolver.
+/// an `ExactCoverSolver`.
 pub struct ExactCoverSolutionIter<'a> {
     pub(super) solver: &'a mut ExactCoverSolver,
 }
@@ -22,7 +22,8 @@ impl<'a> Iterator for ExactCoverSolutionIter<'a> {
         self.solver.next_solution()
     }
 }
-
+/// An iterator over the remaining solver steps from the state of
+/// an `ExactCoverSolver`.
 pub struct ExactCoverStepIter<'a> {
     pub(super) solver: &'a mut ExactCoverSolver,
 }
