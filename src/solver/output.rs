@@ -1,8 +1,11 @@
 use std::collections::HashSet;
 
-/// A solution of the solver, consisting of a list of row indices
-/// which constitute an exact cover.
-pub struct Solution(pub Vec<usize>);
+/// A solution of the solver, consisting of an increasing (?! TODO check) list of row indices
+/// constituting an exact cover.
+pub struct Solution(
+    /// The inner solution.
+    pub Vec<usize>,
+);
 
 /// A single step of the solver.
 /// The solver logically holds a stack containing the row indices

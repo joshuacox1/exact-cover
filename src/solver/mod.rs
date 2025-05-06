@@ -1,3 +1,6 @@
+//! Module containing the exact cover solver and associated input/output types.
+//! 
+//! TODO: an example of calling the solver.
 
 mod errors;
 mod iterators;
