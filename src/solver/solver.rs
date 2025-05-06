@@ -24,8 +24,8 @@ pub struct ExactCoverSolver {
     /// to add 2^S solutions, one for each subset of empty rows.
     /// TODO: of course test this.
     empty_rows: Vec<usize>,
-    solution_counter: u64,
-    step_counter: u64,
+    counter_solutions: u64,
+    counter_steps: u64,
 }
 
 // A generic value for unused values.
@@ -192,8 +192,8 @@ impl ExactCoverSolver {
             // think about this... extending as appropriate...
             o_for_reporting: vec![],
             empty_rows,
-            solution_counter: 0,
-            step_counter: 0,
+            counter_solutions: 0,
+            counter_steps: 0,
         })
     }
 
@@ -318,8 +318,8 @@ impl ExactCoverSolver {
     }
 
     /// The number of solutions seen so far.
-    pub fn solution_counter(&self) -> u64 { self.solution_counter }
+    pub fn counter_solutions(&self) -> u64 { self.counter_solutions }
 
     /// The number of solver steps performed so far.
-    pub fn step_counter(&self) -> u64 { self.step_counter }
+    pub fn counter_steps(&self) -> u64 { self.counter_steps }
 }
