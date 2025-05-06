@@ -8,3 +8,4 @@ A fast, efficient solver for the exact cover problem.
 - Returns correct output in all cases including duplicate and empty rows. (To be clear, adding $n$ empty rows multiplies the number of solutions by $2^n$.)
 - Written in a generator style so the solver can be started and stopped.
 - Presents a notion of a solver &ldquo;step&rdquo; and methods to advance a step, advance to the next solution, and so on.
+- Has a simple accompanying executable to read and write solutions to files.
