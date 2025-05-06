@@ -9,6 +9,8 @@
 use super::solver::ExactCoverSolver;
 use super::output::{Solution, SolverStep};
 
+/// An iterator over the remaining solutions from the state of
+/// an ExactCoverSolver.
 pub struct ExactCoverSolutionIter<'a> {
     pub(super) solver: &'a mut ExactCoverSolver,
 }

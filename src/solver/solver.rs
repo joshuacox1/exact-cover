@@ -3,6 +3,18 @@ use super::output::{Solution, SolverStep};
 use super::node::Node;
 use super::ExactCoverError;
 
+/// An exact cover solver.
+/// 
+/// An `ExactCoverSolver` must be initialised with an exact cover problem.
+/// It then holds internal state from which it is able to produce
+/// all solutions.
+/// 
+/// The `ExactCoverSolver` exposes two notions of "next": `.next_solution()`
+/// and `.next_step()`. `.next_solution()` runs the solver forward until the
+/// next solution is found, if one exists; `.next_step()` runs the solver
+/// until the next discrete solver step, if there are any. Calls to these
+/// may be interleaved with no problem. The solver also exposes
+/// iterator wrapper interfaces via `.iter_solutions()` and `.iter_steps()`.
 pub struct ExactCoverSolver {
     x: Vec<Node>,
     // Set of row labels. Think about this a bit more...
@@ -12,6 +24,8 @@ pub struct ExactCoverSolver {
     /// to add 2^S solutions, one for each subset of empty rows.
     /// TODO: of course test this.
     empty_rows: Vec<usize>,
+    solution_count: u64,
+    step_count: u64,
 }
 
 // A generic value for unused values.
@@ -19,6 +33,14 @@ const UNUSED: usize = 0;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
+    pub fn from_2d_array<const M: usize, const N: usize> (
+        array2d: [[bool; N]; M],
+        num_cols: usize,
+        num_primary_cols: Option<usize>,
+    ) {
+        unimplemented!()
+    }
+
     /// Creates an exact cover solver from a matrix. Each `Vec` contains
     /// a bool.
     /// 
@@ -159,6 +181,8 @@ impl ExactCoverSolver {
             // think about this... extending as appropriate...
             o_for_reporting: vec![],
             empty_rows,
+            solution_count: 0,
+            step_count: 0,
         })
     }
 
@@ -265,4 +289,14 @@ impl ExactCoverSolver {
         let l = self.x[c].left;
         self.x[l].right = c;
     }
+
+    /// The number of empty columns in the problem provided to the
+    /// exact cover solver. n of these will bloat the number of solutions
+    /// by 2^n.
+    pub fn solution_count(&self) -> u64 { self.solution_count }
+
+    /// The number of empty columns in the problem provided to the
+    /// exact cover solver. n of these will bloat the number of solutions
+    /// by 2^n.
+    pub fn step_count(&self) -> u64 { self.step_count }
 }

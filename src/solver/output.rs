@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-/// A solution of the solver, consisting of an increasing (?! TODO check) list of row indices
-/// constituting an exact cover.
+/// A solution of the solver, consisting of a strictly increasing
+/// (?! TODO check) list of row indices constituting an exact cover.
 pub struct Solution(
     /// The inner solution.
     pub Vec<usize>,
