@@ -1,4 +1,19 @@
+use exact_cover_solver::solver::ExactCoverSolver;
+
 
 fn main() {
-    println!("Hello, world!");
+    let o = false; let x = true;
+    let problem = [
+        [o,o,x,o,x,x,o],
+        [x,o,o,x,o,o,x],
+        [o,x,x,o,o,x,o],
+        [x,o,o,x,o,o,o],
+        [x,o,o,x,o,o,o],
+        [o,x,o,o,o,o,x],
+        [o,o,o,x,x,o,x],
+    ];
+
+    let mut solver = ExactCoverSolver::from_array_2d(problem, 0).unwrap();
+
+    solver.search(0);
 }

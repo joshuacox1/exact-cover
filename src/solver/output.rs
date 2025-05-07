@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 
-use super::ExactCoverSolver;
-
 /// A solution of the solver, consisting of a strictly increasing
 /// (?! TODO check) list of row indices constituting an exact cover.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Solution(
     /// The inner solution.
     pub Vec<usize>,
@@ -12,6 +11,7 @@ pub struct Solution(
 /// A single step of the solver.
 /// The solver logically holds a stack containing the row indices
 /// making up its current provisional solution.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SolverStep {
     /// Choose a column (constraint) to enumerate over. The solver always
     /// chooses the lowest-indexed column with the fewest satisfying choices.

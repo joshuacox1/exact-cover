@@ -197,11 +197,47 @@ impl ExactCoverSolver {
         })
     }
 
-    // TODO: port the Javascript to a recursive function here, check it
-    // works CORRECTLY, and only then work out how to express it as a generator
-    // as below.
-    fn search() -> Option<Vec<usize>> {
-        unimplemented!()
+    /// TODO: port the Javascript to a recursive function here, check it
+    /// works CORRECTLY, and only then work out how to express it as a generator
+    /// as below.
+    /// Delete this eventually.
+    pub fn search(&mut self, k: usize) {
+        if self.x[HEAD].right == HEAD {
+            // print solution and return
+            println!("{:?}", self.o_for_reporting);
+        }
+
+        let (mut col_node, _) = self.col_with_least_ones();
+        self.cover(col_node);
+
+        let mut r = self.x[col_node].down;
+        while r != col_node {
+            self.o_for_reporting[k] = r;
+
+            let mut j = self.x[r].right;
+            while j != r {
+                self.cover(j);
+
+                j = self.x[j].left;
+            }
+
+            self.search(k+1);
+
+            r = self.o_for_reporting[k];
+            col_node = self.x[r].col;
+
+            let mut j = self.x[r].left;
+            while j != r {
+                self.uncover(j);
+
+                j = self.x[j].left;
+            }
+
+            r = self.x[r].down;
+        }
+
+        self.uncover(col_node);
+        return;
     }
 
     /// The current partial solution, i.e. the solver's current row stack.
@@ -243,7 +279,8 @@ impl ExactCoverSolver {
     // TODO. When just solving efficiently, we will simply want to return the col
     // (and maybe the size). But for diagnostic purposes, we may want to return
     // all of the cols of relevant size.
-    // returns index of the col node. and the smallest size
+    // returns index of the col node. and the smallest size INDEX OF THE COL NODE
+    // not the COLUMN
     fn col_with_least_ones(&self) -> (usize, usize) {
         // We know at this point that HEAD.right != HEAD.
         // otherwise we exit early in search.

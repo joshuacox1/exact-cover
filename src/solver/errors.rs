@@ -5,6 +5,7 @@
 /// matrices, even those of zero length or width, the only errors
 /// that can occur do so due to straightforward reasons like
 /// inconsistent array bounds.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ProblemError {
     /// A column index or count has been provided which is inconsistent
     /// with the stated column count.

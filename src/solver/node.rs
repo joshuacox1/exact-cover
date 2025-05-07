@@ -1,5 +1,6 @@
 // TODO: at some point remove size and row_label
 // for non-columns. It's a waste of space for most of the nodes.
+#[derive(Debug)]
 pub(super) struct Node {
     pub left: usize,
     pub right: usize,
