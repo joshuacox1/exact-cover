@@ -15,8 +15,9 @@ use super::ProblemError;
 /// until the next discrete solver step, if there are any. Calls to these
 /// may be interleaved with no problem. The solver also exposes
 /// iterator wrapper interfaces via `.iter_solutions()` and `.iter_steps()`.
+#[derive(Debug)]
 pub struct ExactCoverSolver {
-    x: Vec<Node>,
+    pub x: Vec<Node>,
     // Set of row labels. Think about this a bit more...
     o_for_reporting: Vec<usize>,
     /// Empty rows. The default behaviour of Algorithm X / Dancing Links
@@ -107,7 +108,7 @@ impl ExactCoverSolver {
         // If there are any columns, right should point at the first one.
         // Not sure what happens if no columns. TODO check.
         let root = Node {
-            left: 0,
+            left: primary_cols,
             right: if num_cols > 0 { 1 } else { 0 },
             up: UNUSED, down: UNUSED,
             col: UNUSED, size: UNUSED, row_label: UNUSED,
@@ -171,12 +172,10 @@ impl ExactCoverSolver {
                 };
                 nodes.push(new_node);
 
-                // If this isn't the first node, make the node to the left
-                // point right to this.
-                if left != new_index {
-                    nodes[left].right = new_index;
-                }
+                nodes[left].right = new_index;
                 nodes[first_of_row.unwrap()].left = new_index;
+                let last_of_col = nodes[col].up;
+                nodes[last_of_col].down = new_index;
                 nodes[col].up = new_index;
 
                 nodes[j+1].size += 1;
@@ -190,7 +189,7 @@ impl ExactCoverSolver {
         Ok(Self {
             x: nodes,
             // think about this... extending as appropriate...
-            o_for_reporting: vec![],
+            o_for_reporting: vec![0; num_cols],
             empty_rows,
             counter_solutions: 0,
             counter_steps: 0,
@@ -202,23 +201,29 @@ impl ExactCoverSolver {
     /// as below.
     /// Delete this eventually.
     pub fn search(&mut self, k: usize) {
+        println!("Calling search with {k}");
         if self.x[HEAD].right == HEAD {
-            // print solution and return
-            println!("{:?}", self.o_for_reporting);
+            println!("SOLUTION: {:?}",
+                self.o_for_reporting.iter().take(k).map(|&r| self.x[r].row_label).collect::<Vec<_>>());
+            return;
         }
 
         let (mut col_node, _) = self.col_with_least_ones();
+        println!("Chose column {}", col_node-1); // this -1 is safe because colnodes are col index + 1
         self.cover(col_node);
 
         let mut r = self.x[col_node].down;
+        let mut first = true;
         while r != col_node {
             self.o_for_reporting[k] = r;
+            println!("{} row {}", if first { "Added " } else { "Advanced to "},  self.x[r].row_label);
+            first = false;
 
             let mut j = self.x[r].right;
             while j != r {
-                self.cover(j);
+                self.cover(self.x[j].col);
 
-                j = self.x[j].left;
+                j = self.x[j].right;
             }
 
             self.search(k+1);
@@ -228,16 +233,22 @@ impl ExactCoverSolver {
 
             let mut j = self.x[r].left;
             while j != r {
-                self.uncover(j);
+                self.uncover(self.x[j].col);
 
                 j = self.x[j].left;
             }
 
             r = self.x[r].down;
         }
+        println!("Remove row {}", self.x[r].row_label);
 
         self.uncover(col_node);
         return;
+    }
+
+    // For debugging. TODO: Delete!
+    pub fn print_node(&self, node: usize) {
+        println!("Node {}: {:?}", node, self.x[node]);
     }
 
     /// The current partial solution, i.e. the solver's current row stack.
