@@ -30,7 +30,7 @@ pub struct ExactCoverSolver {
 }
 
 // A generic value for unused values.
-const UNUSED: usize = 0;
+const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
@@ -201,7 +201,6 @@ impl ExactCoverSolver {
     /// as below.
     /// Delete this eventually.
     pub fn search(&mut self, k: usize) {
-        println!("Calling search with {k}");
         if self.x[HEAD].right == HEAD {
             println!("SOLUTION: {:?}",
                 self.o_for_reporting.iter().take(k).map(|&r| self.x[r].row_label).collect::<Vec<_>>());
@@ -209,15 +208,11 @@ impl ExactCoverSolver {
         }
 
         let (mut col_node, _) = self.col_with_least_ones();
-        println!("Chose column {}", col_node-1); // this -1 is safe because colnodes are col index + 1
         self.cover(col_node);
 
         let mut r = self.x[col_node].down;
-        let mut first = true;
         while r != col_node {
             self.o_for_reporting[k] = r;
-            println!("{} row {}", if first { "Added" } else { "Advanced to"},  self.x[r].row_label);
-            first = false;
 
             let mut j = self.x[r].right;
             while j != r {
@@ -240,7 +235,6 @@ impl ExactCoverSolver {
 
             r = self.x[r].down;
         }
-        println!("Remove row {}", self.x[r].row_label);
 
         self.uncover(col_node);
         return;
