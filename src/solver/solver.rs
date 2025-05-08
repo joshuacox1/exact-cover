@@ -216,7 +216,7 @@ impl ExactCoverSolver {
         let mut first = true;
         while r != col_node {
             self.o_for_reporting[k] = r;
-            println!("{} row {}", if first { "Added " } else { "Advanced to "},  self.x[r].row_label);
+            println!("{} row {}", if first { "Added" } else { "Advanced to"},  self.x[r].row_label);
             first = false;
 
             let mut j = self.x[r].right;
