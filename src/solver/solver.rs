@@ -1,7 +1,20 @@
-use super::iterators::{ExactCoverSolutionIter, ExactCoverStepIter};
-use super::output::{Solution, SolverStep};
-use super::node::Node;
-use super::ProblemError;
+use super::{
+    ExactCoverProblemSpec, ExactCoverSolutionIter, ExactCoverStepIter,
+    Solution, SolverStep,
+};
+
+// TODO: at some point remove size and row_label
+// for non-columns. It's a waste of space for most of the nodes.
+#[derive(Debug)]
+pub(super) struct Node {
+    pub left: usize,
+    pub right: usize,
+    pub up: usize,
+    pub down: usize,
+    pub col: usize,
+    pub row_label: usize,
+    pub size: usize,
+}
 
 /// An exact cover solver.
 /// 
@@ -17,7 +30,7 @@ use super::ProblemError;
 /// iterator wrapper interfaces via `.iter_solutions()` and `.iter_steps()`.
 #[derive(Debug)]
 pub struct ExactCoverSolver {
-    pub x: Vec<Node>,
+    x: Vec<Node>,
     // Set of row labels. Think about this a bit more...
     o_for_reporting: Vec<usize>,
     /// Empty rows. The default behaviour of Algorithm X / Dancing Links
@@ -34,74 +47,10 @@ const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
-    /// Creates an exact cover solver from a 2D boolean array. The number
-    /// of primary columns is inferred as `COLUMNS - secondary_cols`.
-    /// 
-    /// Succeeds if `secondary_cols > COLUMNS`. Otherwise returns
-    /// a `ProblemError::InconsistentColumnCount`.
-    pub fn from_array_2d<const ROWS: usize, const COLUMNS: usize> (
-        array2d: [[bool; COLUMNS]; ROWS],
-        secondary_cols: usize,
-    ) -> Result<Self, ProblemError> {
-        if secondary_cols > COLUMNS {
-            Err(ProblemError::InconsistentColumnCount {
-                bad_row: 0,
-                bad_col: secondary_cols,
-            })
-        } else {
-            let ones = array2d.iter()
-                .map(|row| row.iter()
-                    .enumerate()
-                    .filter_map(|(i, b)| b.then_some(i)))
-                .collect::<Vec<_>>();
-            Self::from_ones(ones.into_iter(), COLUMNS-secondary_cols, secondary_cols)
-        }
-    }
-
-    /// Creates an exact cover solver from a `Vec` of `Vec` rows.
-    ///
-    /// Succeeds if and only the length of every `Vec` in `vec2d` is equal
-    /// to `primary_cols+secondary_cols`.
-    pub fn from_vec_2d(
-        vec2d: Vec<Vec<bool>>,
-        primary_cols: usize,
-        secondary_cols: usize,
-    ) -> Result<Self, ProblemError> {
-        let ones = Self::vec_2d_to_ones(&vec2d, primary_cols+secondary_cols)?;
-        Self::from_ones(ones.into_iter(), primary_cols, secondary_cols)
-    }
-
-    /// Turns a matrix of booleans into a Vec of iterators of indices where
-    /// the `true` values were.
-    fn vec_2d_to_ones(
-        vec2d: &[Vec<bool>],
-        num_cols: usize)
-    -> Result<Vec<impl Iterator<Item = usize>>, ProblemError> {
-        vec2d.iter()
-            .enumerate()
-            .map(|(j, row)| {
-                let l = row.len();
-                if l != num_cols {
-                    Err(ProblemError::InconsistentColumnCount {
-                        bad_row: j,
-                        bad_col: l,
-                    })
-                } else {
-                    Ok(row.iter()
-                        .enumerate()
-                        .filter_map(|(i, b)| b.then_some(i)))
-                }
-            })
-            .collect::<Result<Vec<_>, _>>()
-    }
-
-    /// Creates an exact cover solver from an iterator of iterators
-    /// of indices where 1s lie.
-    pub fn from_ones(
-        ones: impl Iterator<Item = impl Iterator<Item = usize>>,
-        primary_cols: usize,
-        secondary_cols: usize,
-    ) -> Result<Self, ProblemError> {
+    pub fn from_sparse_rows(problem: &ExactCoverProblemSpec) -> Self {
+        let primary_cols = problem.primary_columns();
+        let secondary_cols = problem.secondary_columns();
+        let ones = problem.matrix().ordered_points_rows();
         let num_cols = primary_cols + secondary_cols;
 
         // The root node lives at index 0 of the node list.
@@ -141,12 +90,6 @@ impl ExactCoverSolver {
             let mut first_of_row = None;
 
             for j in row {
-                if j > num_cols {
-                    return Err(ProblemError::InconsistentColumnCount {
-                        bad_row: i,
-                        bad_col: j,
-                    });
-                }
                 let new_index = nodes.len();
 
                 let left; let right;
@@ -186,24 +129,33 @@ impl ExactCoverSolver {
             }
         }
 
-        Ok(Self {
+        Self {
             x: nodes,
             // think about this... extending as appropriate...
             o_for_reporting: vec![0; num_cols],
             empty_rows,
             counter_solutions: 0,
             counter_steps: 0,
-        })
+        }
     }
 
     /// TODO: port the Javascript to a recursive function here, check it
     /// works CORRECTLY, and only then work out how to express it as a generator
     /// as below.
     /// Delete this eventually.
-    pub fn search(&mut self, k: usize) {
+    pub fn search(&mut self) -> Vec<Solution> {
+        let mut solutions = vec![];
+        self.search_rec(0, &mut solutions);
+        solutions
+    }
+
+    fn search_rec(&mut self, k: usize, solutions: &mut Vec<Solution>) {
         if self.x[HEAD].right == HEAD {
-            println!("SOLUTION: {:?}",
-                self.o_for_reporting.iter().take(k).map(|&r| self.x[r].row_label).collect::<Vec<_>>());
+            let solution = Solution(self.o_for_reporting.iter()
+                .take(k)
+                .map(|&r| self.x[r].row_label)
+                .collect::<Vec<_>>());
+            solutions.push(solution);
             return;
         }
 
@@ -221,7 +173,7 @@ impl ExactCoverSolver {
                 j = self.x[j].right;
             }
 
-            self.search(k+1);
+            self.search_rec(k+1, solutions);
 
             r = self.o_for_reporting[k];
             col_node = self.x[r].col;
