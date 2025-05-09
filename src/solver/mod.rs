@@ -14,20 +14,24 @@ pub use solver::ExactCoverSolver;
 
 #[cfg(test)]
 mod test {
+    use crate::sparse_binary_matrix::SparseBinaryMatrix;
+
     use super::*;
     // use crate::problems::
 
     // Donald Knuth's example.
-    fn knuth_example() -> [[bool; 7]; 6] {
+    fn knuth_example() -> ExactCoverProblemSpec {
         let o = false; let x = true;
-        [
+        let arrays = [
             [o,o,x,o,x,x,o],
             [x,o,o,x,o,o,x],
             [o,x,x,o,o,x,o],
             [x,o,o,x,o,o,o],
             [o,x,o,o,o,o,x],
             [o,o,o,x,x,o,x],
-        ]
+        ];
+        let matrix = SparseBinaryMatrix::from_array_2d(arrays);
+        ExactCoverProblemSpec::new_standard(matrix)
     }
 
     // // What N to test the N queens on. The brute-force generator is relatively

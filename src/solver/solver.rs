@@ -47,7 +47,7 @@ const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
-    pub fn from_sparse_rows(problem: &ExactCoverProblemSpec) -> Self {
+    pub fn new(problem: &ExactCoverProblemSpec) -> Self {
         let primary_cols = problem.primary_columns();
         let secondary_cols = problem.secondary_columns();
         let ones = problem.matrix().ordered_points_rows();
@@ -139,11 +139,11 @@ impl ExactCoverSolver {
         }
     }
 
-    /// TODO: port the Javascript to a recursive function here, check it
-    /// works CORRECTLY, and only then work out how to express it as a generator
-    /// as below.
-    /// Delete this eventually.
-    pub fn search(&mut self) -> Vec<Solution> {
+    /// Get all solutions to the exact cover problem at once.
+    /// This function *may* be faster than the generator-written versions
+    /// as it does no auxiliary book-keeping. I'm not sure how much the compiler
+    /// can optimise those either. One to benchmark.
+    pub fn all_solutions(&mut self) -> Vec<Solution> {
         let mut solutions = vec![];
         self.search_rec(0, &mut solutions);
         solutions

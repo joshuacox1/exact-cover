@@ -1,21 +1,26 @@
-// use crate::solver::Solution;
+use crate::solver::{ExactCoverProblemSpec, ExactCoverSolver, Solution};
 
-// /// A trait for an exact cover problem.
-// pub trait ExactCoverProblem<TArgs, TFail, TSolution> {
-//     /// Fallibly transforms an input of type `TArgs` into an exact cover
-//     /// problem specification.
-//     fn to_exact_cover(t: TArgs) -> ProblemSpec<TRows, TRow>;
+/// A trait for a problem representable as an exact cover problem.
+/// This trait is implemented by various common problems.
+pub trait ExactCoverProblem : Sized {
+    type TSolution;
 
-//     /// s.
-//     fn from_solution(s: &Solution) -> TSolution;
+    /// Fallibly transforms an input into an exact cover problem specification.
+    fn exact_cover_spec(&self) -> ExactCoverProblemSpec;
 
-//     fn to_solver(t: TArgs) -> 
-// }
+    /// Transforms a solution from the exact cover solver into a
+    /// domain-specific solution.
+    fn from_solution(&self, s: &Solution) -> Self::TSolution;
 
+    /// Convenience method to chain creation of a problem into a ready solver.
+    fn solver(&self) -> ExactCoverSolver {
+        ExactCoverSolver::new(&self.exact_cover_spec())
+    }
 
-// /// A problem specification for the 
-// pub struct ProblemSpec<T: Iterator<Item = U>, U: Iterator<Item = usize>> {
-//     sparse_rows: T,
-//     primary_columns: usize,
-//     secondary_columns: usize,
-// }
+    /// Convenience method to immediately return the solutions to an exact
+    /// cover problem.
+    fn solve(&self) -> Vec<Self::TSolution> {
+        let mut solver = self.solver();
+        solver.iter_solutions().map(|s| self.from_solution(&s)).collect::<Vec<_>>()
+    }
+}

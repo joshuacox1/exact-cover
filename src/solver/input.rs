@@ -21,8 +21,8 @@ impl ExactCoverProblemSpec {
         }
     }
 
-    /// Creates a new exact cover problem specification from a sparse
-    /// binary matrix, assuming no secondary columns.
+    /// Creates a new non-generalised exact cover problem specification
+    /// from a sparse binary matrix.
     pub fn new_standard(matrix: SparseBinaryMatrix) -> Self {
         Self::new_general(matrix, 0).unwrap() // infallible
     }

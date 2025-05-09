@@ -5,3 +5,4 @@ mod n_queens;
 mod problem;
 
 pub use n_queens::*;
+pub use problem::ExactCoverProblem;
