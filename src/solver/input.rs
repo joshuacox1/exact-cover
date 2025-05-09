@@ -1,15 +1,15 @@
 use crate::sparse_binary_matrix::SparseBinaryMatrix;
 
 /// Specification of a generalised exact cover problem.
-pub struct ExactCoverProblemSpec {
+pub struct ExactCoverSpec {
     matrix: SparseBinaryMatrix,
     secondary_columns: usize,
 }
 
-impl ExactCoverProblemSpec {
+impl ExactCoverSpec {
     /// Creates a generalised exact cover problem specification from a sparse
     /// binary matrix and the number of secondary columns.
-    /// Returns an error if and only if `secondary_columns` > `matrix.num_cols()`.
+    /// Returns an `Err` if and only if `secondary_columns` > `matrix.num_cols()`.
     pub fn new_general(
         matrix: SparseBinaryMatrix,
         secondary_columns: usize,
@@ -36,6 +36,7 @@ impl ExactCoverProblemSpec {
     /// The number of secondary columns for this exact cover problem specification.
     pub fn secondary_columns(&self) -> usize { self.secondary_columns }
 
-    /// Whether this is a _generalised_ exact cover problem (i.e. has secondary columns).
+    /// Whether this is a generalised exact cover problem (i.e. has
+    /// secondary columns as optional constraints).
     pub fn generalised(&self) -> bool { self.secondary_columns > 0 }
 }

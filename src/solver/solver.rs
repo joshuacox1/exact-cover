@@ -1,6 +1,6 @@
 use super::{
-    ExactCoverProblemSpec, ExactCoverSolutionIter, ExactCoverStepIter,
-    Solution, SolverStep,
+    ExactCoverSpec, ExactCoverSolutionIter, ExactCoverStepIter,
+    ExactCover, SolverStep,
 };
 
 // TODO: at some point remove size and row_label
@@ -47,7 +47,8 @@ const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
-    pub fn new(problem: &ExactCoverProblemSpec) -> Self {
+    /// Creates a new exact cover solver from a problem specification.
+    pub fn new(problem: &ExactCoverSpec) -> Self {
         let primary_cols = problem.primary_columns();
         let secondary_cols = problem.secondary_columns();
         let ones = problem.matrix().ordered_points_rows();
@@ -143,15 +144,15 @@ impl ExactCoverSolver {
     /// This function *may* be faster than the generator-written versions
     /// as it does no auxiliary book-keeping. I'm not sure how much the compiler
     /// can optimise those either. One to benchmark.
-    pub fn all_solutions(&mut self) -> Vec<Solution> {
+    pub fn all_solutions(&mut self) -> Vec<ExactCover> {
         let mut solutions = vec![];
         self.search_rec(0, &mut solutions);
         solutions
     }
 
-    fn search_rec(&mut self, k: usize, solutions: &mut Vec<Solution>) {
+    fn search_rec(&mut self, k: usize, solutions: &mut Vec<ExactCover>) {
         if self.x[HEAD].right == HEAD {
-            let solution = Solution(self.o_for_reporting.iter()
+            let solution = ExactCover(self.o_for_reporting.iter()
                 .take(k)
                 .map(|&r| self.x[r].row_label)
                 .collect::<Vec<_>>());
@@ -193,28 +194,23 @@ impl ExactCoverSolver {
     }
 
     // For debugging. TODO: Delete!
-    pub fn print_node(&self, node: usize) {
-        println!("Node {}: {:?}", node, self.x[node]);
-    }
+    // pub fn print_node(&self, node: usize) {
+    //     println!("Node {}: {:?}", node, self.x[node]);
+    // }
 
     /// The current partial solution, i.e. the solver's current row stack.
     pub fn current_partial_solution(&self) -> Vec<usize> {
         unimplemented!()
     }
 
-    /// The current subset of columns under consideration.
-    pub fn current_columns(&self) -> Vec<usize> {
-        unimplemented!()
-    }
-
-    /// The current subset of rows under consideration.
+    /// The current subset of rows under consideration. TODO: Isn't this the same as current partial solution?
     pub fn current_rows(&self) -> Vec<usize> {
         // blast, it's going to take extra book-keeping to get the rows.
         unimplemented!()
     }
 
     /// Return the next solution if there are any remaining.
-    pub fn next_solution(&mut self) -> Option<Solution> {
+    pub fn next_solution(&mut self) -> Option<ExactCover> {
         unimplemented!()
     }
 

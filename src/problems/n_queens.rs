@@ -3,15 +3,17 @@ use std::{collections::HashSet, fmt::{Debug, Formatter}, fmt};
 use itertools::Itertools;
 
 use crate::{
-    solver::{ExactCoverProblemSpec, Solution},
+    solver::{ExactCoverSpec, ExactCover},
     sparse_binary_matrix::SparseBinaryMatrix,
 
 };
 use super::ExactCoverProblem;
 
+/// Create a new representation of an n-queens problem.
 #[derive(Debug, Copy, Clone)]
 pub struct NQueens(usize);
 
+/// A chessboard square.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BoardSquare { pub row: usize, pub column: usize }
 
@@ -24,7 +26,7 @@ impl Debug for BoardSquare {
 impl ExactCoverProblem for NQueens {
     type TSolution = Vec<BoardSquare>;
 
-    fn exact_cover_spec(&self) -> ExactCoverProblemSpec {
+    fn exact_cover_spec(&self) -> ExactCoverSpec {
         let n = self.0;
         let primary_columns = 2*n;
         let secondary_columns = 4*n-2;
@@ -40,11 +42,11 @@ impl ExactCoverProblem for NQueens {
             });
         // These are both infallible as constructed above. Check the n=0 case though.
         let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
-        let problem = ExactCoverProblemSpec::new_general(matrix, secondary_columns).unwrap();
+        let problem = ExactCoverSpec::new_general(matrix, secondary_columns).unwrap();
         problem
     }
 
-    fn from_solution(&self, solution: &Solution) -> Self::TSolution {
+    fn from_solution(&self, solution: &ExactCover) -> Self::TSolution {
         let mut result = solution.0.iter()
             .map(|&r| n_queens_row_to_square(r, self.0))
             .collect::<Vec<_>>();
@@ -58,11 +60,13 @@ fn n_queens_row_to_square(row: usize, n: usize) -> BoardSquare {
 }
 
 impl NQueens {
+    /// Create a new `n`-queens problem for the provided `n`.
     pub fn new(n: usize) -> Self { Self(n) }
 
+    /// The `n` for this `n`-queens problem.
     pub fn n(&self) -> usize { self.0 }
 
-    /// Relatively brute-force solution to the n queens problem (generate all
+    /// Relatively brute-force method to generate all solutinos (generate all
     /// permutations of N and check for diagonal attacks). It is simple in
     /// order to be trustworthy to compare to the output of the solver.
     /// If trying larger N, may want to  replace this with a (still

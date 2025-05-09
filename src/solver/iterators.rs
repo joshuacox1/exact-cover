@@ -7,7 +7,7 @@
 //! as used in e.g. standard library HashMap.
 
 use super::solver::ExactCoverSolver;
-use super::output::{Solution, SolverStep};
+use super::output::{ExactCover, SolverStep};
 
 /// An iterator over the remaining solutions from the state of
 /// an `ExactCoverSolver`.
@@ -16,7 +16,7 @@ pub struct ExactCoverSolutionIter<'a> {
 }
 
 impl<'a> Iterator for ExactCoverSolutionIter<'a> {
-    type Item = Solution;
+    type Item = ExactCover;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.solver.next_solution()

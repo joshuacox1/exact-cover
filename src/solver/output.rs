@@ -3,7 +3,7 @@ use std::collections::HashSet;
 /// A solution of the solver, consisting of a strictly increasing
 /// (?! TODO check) list of row indices constituting an exact cover.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Solution(
+pub struct ExactCover(
     /// The inner solution.
     pub Vec<usize>,
 );
@@ -32,5 +32,5 @@ pub enum SolverStep {
     /// Pops the last row from the list forming the current provisional solution.
     PopRow(usize),
     /// Reports that the current stack state forms a solution.
-    ReportSolution(Solution),
+    ReportSolution(ExactCover),
 }

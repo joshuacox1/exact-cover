@@ -1,4 +1,4 @@
-
+//! Module holding the sparse binary matrix type.
 
 /// A sparse binary matrix type. Stored in compressed sparse row (CSR) format.
 /// Can have any number of rows and columns, including 0.

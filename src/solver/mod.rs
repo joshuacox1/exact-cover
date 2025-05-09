@@ -7,9 +7,9 @@ mod iterators;
 mod output;
 mod solver;
 
-pub use input::ExactCoverProblemSpec;
+pub use input::ExactCoverSpec;
 pub use iterators::{ExactCoverSolutionIter, ExactCoverStepIter};
-pub use output::{Solution, SolverStep};
+pub use output::{ExactCover, SolverStep};
 pub use solver::ExactCoverSolver;
 
 #[cfg(test)]
@@ -20,7 +20,7 @@ mod test {
     // use crate::problems::
 
     // Donald Knuth's example.
-    fn knuth_example() -> ExactCoverProblemSpec {
+    fn knuth_example() -> ExactCoverSpec {
         let o = false; let x = true;
         let arrays = [
             [o,o,x,o,x,x,o],
@@ -31,7 +31,7 @@ mod test {
             [o,o,o,x,x,o,x],
         ];
         let matrix = SparseBinaryMatrix::from_array_2d(arrays);
-        ExactCoverProblemSpec::new_standard(matrix)
+        ExactCoverSpec::new_standard(matrix)
     }
 
     // // What N to test the N queens on. The brute-force generator is relatively
