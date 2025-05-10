@@ -1,16 +1,112 @@
-//! All solver test cases.
-//! Each test case
+//! Solver test cases.
+//! Test cases for generic "problems" implementing `ExactCoverProblem`
+//! live in the `problems` module. This is because their generation
+//! TODO: have some simple test _step_ cases for fine-grained detail.
 
-use crate::solver::{ExactCover, ExactCoverSolver, ExactCoverSpec};
+use crate::{problems::{ExactCoverProblem, NQueens}, solver::{ExactCover, ExactCoverSolver, ExactCoverSpec}, sparse_binary_matrix::SparseBinaryMatrix};
 
-pub(super) trait TestCase {
-    fn spec() -> ExactCoverSpec;
-    fn expected_solutions() -> Vec<ExactCover>;
-    fn assert_solution_match() {
-        let exp = Self::expected_solutions();
-        let spec = Self::spec();
+pub trait TestCase {
+    fn spec(&self) -> ExactCoverSpec;
+    fn expected_solutions(&self) -> Vec<ExactCover>;
+    fn assert_solution_match(&self) {
+        let exp = self.expected_solutions();
+        let spec = self.spec();
         let actual_sols = ExactCoverSolver::all_solutions(&spec);
-        // TODO: add solution sorting helper
+        // TODO: add solution sorting helper. As it stands this will blow up
         assert_eq!(exp, actual_sols);
     }
 }
+
+pub struct KnuthSimple;
+
+impl TestCase for KnuthSimple {
+    fn spec(&self) -> ExactCoverSpec {
+        let o = false; let x = true;
+        let arrays = [
+            [o,o,x,o,x,x,o],
+            [x,o,o,x,o,o,x],
+            [o,x,x,o,o,x,o],
+            [x,o,o,x,o,o,o],
+            [o,x,o,o,o,o,x],
+            [o,o,o,x,x,o,x],
+        ];
+        let matrix = SparseBinaryMatrix::from_array_2d(arrays);
+        ExactCoverSpec::new_standard(matrix)
+    }
+
+    fn expected_solutions(&self) -> Vec<ExactCover> {
+        // Only one.
+        vec![ExactCover(vec![0,3,4])]
+    }
+}
+
+pub struct ZeroByZero;
+
+impl TestCase for ZeroByZero {
+    fn spec(&self) -> ExactCoverSpec {
+        let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
+        ExactCoverSpec::new_general(matrix, 0).unwrap()
+    }
+
+    // You might think no solutions, but there is a solution.
+    fn expected_solutions(&self) -> Vec<ExactCover> {
+        vec![ExactCover(vec![])]
+    }
+}
+
+pub struct ZeroRowsThreeCols;
+
+impl TestCase for ZeroRowsThreeCols {
+    fn spec(&self) -> ExactCoverSpec {
+        let matrix = SparseBinaryMatrix::from_array_2d::<0, 3>([]);
+        // As long as there is at leat one primary column...
+        ExactCoverSpec::new_general(matrix, 2).unwrap()
+    }
+
+    fn expected_solutions(&self) -> Vec<ExactCover> {
+        vec![]  // None.
+    }
+}
+
+pub struct ZeroRowsThreeColsAllSecondary;
+
+impl TestCase for ZeroRowsThreeColsAllSecondary {
+    fn spec(&self) -> ExactCoverSpec {
+        let matrix = SparseBinaryMatrix::from_array_2d::<0, 3>([]);
+        // As long as there is at leat one primary column...
+        ExactCoverSpec::new_general(matrix, 2).unwrap()
+    }
+
+    fn expected_solutions(&self) -> Vec<ExactCover> {
+        vec![ExactCover(vec![])]
+    }
+}
+
+pub struct ThreeRowsZeroCols;
+
+impl TestCase for ThreeRowsZeroCols {
+    fn spec(&self) -> ExactCoverSpec {
+        let matrix = SparseBinaryMatrix::from_array_2d::<3, 0>([[],[],[]]);
+        ExactCoverSpec::new_general(matrix, 3).unwrap()
+    }
+
+    fn expected_solutions(&self) -> Vec<ExactCover> {
+        // As they are empty...
+        [vec![], vec![0], vec![1], vec![2],
+            vec![0,1], vec![0,2], vec![1,2], vec![0,1,2]]
+            .into_iter()
+            .map(ExactCover)
+            .collect::<Vec<_>>()
+    }
+}
+
+
+// TODO: consider writing a proc attribute macro to generate these on the fly.
+// This is especially interesting for when we want to product all tests
+// with all invariants.
+
+#[test] fn check_solutions_knuth_simple() { KnuthSimple.assert_solution_match(); }
+#[test] fn check_solutions_zero_by_zero() { ZeroByZero.assert_solution_match(); }
+#[test] fn check_solutions_zero_rows_three_cols() { ZeroRowsThreeCols.assert_solution_match(); }
+#[test] fn check_solutions_zero_rows_three_cols_all_secondary() { ZeroRowsThreeColsAllSecondary.assert_solution_match(); }
+#[test] fn check_solutions()      { ThreeRowsZeroCols.assert_solution_match(); }

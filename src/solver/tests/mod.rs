@@ -1,5 +1,6 @@
 #![cfg(test)]
 
 mod cases;
-mod correctness;
 mod invariants;
+
+// Nothing needs to be exposed publicly.
