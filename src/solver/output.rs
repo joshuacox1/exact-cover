@@ -21,9 +21,6 @@ pub enum SolverStep {
         /// The number of rows with 1s for this column. This will
         /// be minimal among all columns.
         size: usize,
-        /// Other columns, not including `col`, which are of equal minimal
-        /// size.
-        other_cols: HashSet<usize>,
     },
     /// Finished enumerating over this column; bin it.
     UncoverColumn(usize),

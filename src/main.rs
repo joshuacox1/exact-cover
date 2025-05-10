@@ -4,7 +4,8 @@ fn main() {
     let queens = NQueens::new(8);
     // let mut b = queens.brute_force();
     // b.sort();
-    let mut b2 = queens.solver().search_non_rec_single_step();
+    let mut b2 = queens.solver().iter_steps().collect::<Vec<_>>();
+    let mut b3 = queens.solver().step_simple();
     //     .map(|s| NQueens::from_solution(&queens, s))
     //     .collect::<Vec<_>>();
     // b2.sort();
@@ -17,7 +18,8 @@ fn main() {
         println!("{s:?}");
     }
     println!("LEN: b2len {:?}", b2.len());
+    println!("LEN: b3len {:?}", b3.len());
     println!("LEN: b2lensolutions {:?}", b2.iter().filter(|q| matches!(q, SolverStep::ReportSolution { .. })).count());
 
-    // println!("{:?}", b == b2);
+    println!("{:?}", b2 == b3);
 }
