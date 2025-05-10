@@ -1,4 +1,4 @@
-use exact_cover_solver::{problems::{ExactCoverProblem, NQueens}, solver::SolverStep};
+use exact_cover_solver::{problems::{ExactCoverProblem, NQueens}, solver::SolverStep, verifications::*};
 
 fn main() {
     let queens = NQueens::new(8);
@@ -15,11 +15,20 @@ fn main() {
     //     println!("{s1:?} {s2:?}");
     // }
     for s in &b2 {
-        println!("{s:?}");
+        match s {
+            SolverStep::ChooseColumn { .. } | SolverStep::UncoverColumn(_) => {
+                println!("{s:?}");
+            },
+            _ => (),
+        }
     }
     println!("LEN: b2len {:?}", b2.len());
-    println!("LEN: b3len {:?}", b3.len());
-    println!("LEN: b2lensolutions {:?}", b2.iter().filter(|q| matches!(q, SolverStep::ReportSolution { .. })).count());
+    // println!("LEN: b3len {:?}", b3.len());
+    // println!("LEN: b2lensolutions {:?}", b2.iter().filter(|q| matches!(q, SolverStep::ReportSolution { .. })).count());
 
     println!("{:?}", b2 == b3);
+    println!("{:?}", valid_unique_entry_row_stack(&queens.exact_cover_spec()));
+    println!("{:?}", valid_unique_entry_col_stack(&queens.exact_cover_spec()));
+    println!("{:?}", solutions_are_exactly_the_exact_covers(&queens.exact_cover_spec()));
+    println!("{:?}", row_buildup_and_partial_solution_identical(&queens.exact_cover_spec()));
 }

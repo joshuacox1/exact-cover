@@ -106,6 +106,17 @@ impl SparseBinaryMatrix {
             .enumerate()
             .flat_map(|(i, row)| row.map(move |j| (i,j)))
     }
+
+    /// Returns the column indices within a row.
+    pub fn get_row(&self, row: usize) -> Option<&[usize]> {
+        if row < self.num_rows() {
+            let start = self.row_starts[row];
+            let end = self.row_starts[row+1];
+            Some(&self.cols[start..end])
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]

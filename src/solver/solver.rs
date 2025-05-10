@@ -562,7 +562,6 @@ impl ExactCoverSolver {
                             .take(self.k)
                             .map(|&r| self.x[r].row_label)
                             .collect::<Vec<_>>());
-                        println!("     SOLUTION: {:?}", solution);
                         self.k = self.k.saturating_sub(1);
                         self.counter_solutions += 1;
 
@@ -583,7 +582,6 @@ impl ExactCoverSolver {
                         let newrow = self.x[r].row_label;
                         self.o_for_reporting[self.k] = r;
 
-                        println!("      ADD ROW: {:?}", newrow);
                         self.stack.push(FinalState::AfterAddOrReplaceRow { r });
                         return Some(SolverStep::PushRow(newrow));
                     } else {
@@ -595,7 +593,6 @@ impl ExactCoverSolver {
                         // at all times.
                         self.k = self.k.saturating_sub(1);
 
-                        println!("COLUMN UNCHOICE: {:?}", col_node-1);
                         return Some(SolverStep::UncoverColumn(col_node-1));
                     }
                 },
@@ -632,13 +629,11 @@ impl ExactCoverSolver {
                         // TODO: factor out duplication of first half of the loop.
                         let newrow = self.x[r].row_label;
                         self.o_for_reporting[self.k] = r;
-                        println!("  REPLACE ROW: {:?}  {:?}", previous_row, newrow);
 
                         self.stack.push(FinalState::AfterAddOrReplaceRow { r });
 
                         return Some(SolverStep::AdvanceRow(previous_row, newrow));
                     } else {
-                        println!("   REMOVE ROW: {:?}", previous_row);
                         self.stack.push(FinalState::AfterRemoveRow { col_node });
 
                         return Some(SolverStep::PopRow(previous_row));
