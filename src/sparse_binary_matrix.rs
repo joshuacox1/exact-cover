@@ -7,6 +7,7 @@
 /// problem. Hence the interface is a bit thin on the ground. You could
 /// easily add functions like number of ones in a row, arbitrary access
 /// (which is O(#ones in the given row)), etc. One to do in the future maybe.
+/// TODO: Add way more ways to make one! Validate! etc
 pub struct SparseBinaryMatrix {
     num_cols: usize,
     cols: Vec<usize>,

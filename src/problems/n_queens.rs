@@ -28,25 +28,31 @@ impl ExactCoverProblem for NQueens {
 
     fn exact_cover_spec(&self) -> ExactCoverSpec {
         let n = self.0;
-        let primary_columns = 2*n;
-        let secondary_columns = 4*n-2;
-        let num_cols = primary_columns + secondary_columns;
-        let ones = (0..n)
-            .cartesian_product(0..n)
-            .map(move |(x,y)| {
-                let row_constraint = y;
-                let col_constraint = n + x;
-                let diag1_constraint = 2*n + x + y;
-                let diag2_constraint = 4*n + x + n - y - 2;
-                [row_constraint, col_constraint, diag1_constraint, diag2_constraint].into_iter()
-            });
-        // These are both infallible as constructed above. Check the n=0 case though.
-        let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
-        let problem = ExactCoverSpec::new_general(matrix, secondary_columns).unwrap();
-        problem
+        if n > 0 {
+            let primary_columns = 2*n;
+            let secondary_columns = 4*n-2;
+            let num_cols = primary_columns + secondary_columns;
+            let ones = (0..n)
+                .cartesian_product(0..n)
+                .map(move |(x,y)| {
+                    let row_constraint = y;
+                    let col_constraint = n + x;
+                    let diag1_constraint = 2*n + x + y;
+                    let diag2_constraint = 4*n + x + n - y - 2;
+                    [row_constraint, col_constraint, diag1_constraint, diag2_constraint].into_iter()
+                });
+            // These are both infallible as constructed above. Check the n=0 case though.
+            let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
+            let problem = ExactCoverSpec::new_general(matrix, secondary_columns).unwrap();
+            problem
+        } else {
+            let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
+            let problem = ExactCoverSpec::new_general(matrix, 0).unwrap();
+            problem
+        }
     }
 
-    fn from_solution(&self, solution: &ExactCover) -> Self::TSolution {
+    fn from_exact_cover_solution(&self, solution: &ExactCover) -> Self::TSolution {
         let mut result = solution.0.iter()
             .map(|&r| n_queens_row_to_square(r, self.0))
             .collect::<Vec<_>>();
@@ -103,16 +109,38 @@ fn valid_queens<'a>(queens: impl Iterator<Item = &'a BoardSquare>, n: usize) -> 
     true
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
+#[cfg(test)]
+mod test {
+    use super::*;
 
-//     // What N to test the N queens on. The brute-force generator is relatively
-//     // simple (generate all permutations) in order to be trustworthy to
-//     // compare to the output of the solver. If trying larger N, may want to
-//     // replace this with a (still pretty simple) backtracking algorithm.
-//     const N_QUEENS: usize = 8;
+    // What N to test the N queens on. The brute-force generator is relatively
+    // simple (generate all permutations) in order to be trustworthy to
+    // compare to the output of the solver. If trying larger N, may want to
+    // replace this with a (still pretty simple) backtracking algorithm.
+    const MAX_N_QUEENS: usize = 8;
 
+    fn sort_sols(sol: &mut [Vec<BoardSquare>]) {
+        for b in sol.iter_mut() {
+            b.sort_unstable();
+        }
+        sol.sort_unstable();
+    }
 
-// }
+    fn test_n_queens(n: usize) {
+        let q = NQueens::new(n);
+        
+        let brute = sort_sols(&mut q.brute_force());
+        let ec = sort_sols(&mut q.exact_cover_all_solutions());
+        assert_eq!(brute, ec);
+    }
 
+    #[test] fn n_queens_0_equal_to_brute_force() { test_n_queens(0); }
+    #[test] fn n_queens_1_equal_to_brute_force() { test_n_queens(1); }
+    #[test] fn n_queens_2_equal_to_brute_force() { test_n_queens(2); }
+    #[test] fn n_queens_3_equal_to_brute_force() { test_n_queens(3); }
+    #[test] fn n_queens_4_equal_to_brute_force() { test_n_queens(4); }
+    #[test] fn n_queens_5_equal_to_brute_force() { test_n_queens(5); }
+    #[test] fn n_queens_6_equal_to_brute_force() { test_n_queens(6); }
+    #[test] fn n_queens_7_equal_to_brute_force() { test_n_queens(7); }
+    #[test] fn n_queens_8_equal_to_brute_force() { test_n_queens(8); }
+}

@@ -10,18 +10,18 @@ pub trait ExactCoverProblem {
 
     /// Transforms a solution from the exact cover solver into a
     /// domain-specific solution.
-    fn from_solution(&self, s: &ExactCover) -> Self::TSolution;
+    fn from_exact_cover_solution(&self, s: &ExactCover) -> Self::TSolution;
 
     /// Convenience method to chain creation of the problem spec
     /// and creation of a ready solver.
-    fn solver(&self) -> ExactCoverSolver {
+    fn exact_cover_solver(&self) -> ExactCoverSolver {
         ExactCoverSolver::new(&self.exact_cover_spec())
     }
 
     /// Convenience method to immediately return all solutions
     /// to the problem.
-    fn all_solutions(&self) -> Vec<Self::TSolution> {
-        let mut solver = self.solver();
-        solver.iter_solutions().map(|s| self.from_solution(&s)).collect::<Vec<_>>()
+    fn exact_cover_all_solutions(&self) -> Vec<Self::TSolution> {
+        let mut solver = self.exact_cover_solver();
+        solver.iter_solutions().map(|s| self.from_exact_cover_solution(&s)).collect::<Vec<_>>()
     }
 }

@@ -4,8 +4,8 @@ fn main() {
     let queens = NQueens::new(8);
     // let mut b = queens.brute_force();
     // b.sort();
-    let mut b2 = queens.solver().iter_steps().collect::<Vec<_>>();
-    let mut b3 = queens.solver().step_simple();
+    let mut b2 = queens.exact_cover_solver().iter_steps().collect::<Vec<_>>();
+    let mut b3 = queens.exact_cover_solver().step_simple();
     //     .map(|s| NQueens::from_solution(&queens, s))
     //     .collect::<Vec<_>>();
     // b2.sort();
