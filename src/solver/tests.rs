@@ -39,8 +39,8 @@ fn valid_unique_entry_row_stack(s: &ExactCoverSpec) {
                 assert_eq!(row_stack[l], r);
                 row_stack.pop();
             },
-            SolverStep::ChooseColumn { .. }
-              | SolverStep::UncoverColumn(_)
+            SolverStep::SelectColumn { .. }
+              | SolverStep::DeselectColumn(_)
               | SolverStep::ReportSolution(_) => (),
         }
     }
@@ -54,11 +54,11 @@ fn valid_unique_entry_col_stack(s: &ExactCoverSpec) {
     let mut col_stack = vec![];
     for step in solver.iter_steps() {
         match step {
-            SolverStep::ChooseColumn { col, .. } => {
+            SolverStep::SelectColumn { col, .. } => {
                 assert!(!col_stack.contains(&col));
                 col_stack.push(col);
             },
-            SolverStep::UncoverColumn(col) => {
+            SolverStep::DeselectColumn(col) => {
                 let l = col_stack.len()-1;
                 assert_eq!(col_stack[l], col);
                 col_stack.pop();
@@ -116,8 +116,8 @@ fn step_row_stack_and_partial_solution_identical(s: &ExactCoverSpec) {
                 row_stack[l] = after;
             },
             SolverStep::PopRow(_) => { row_stack.pop(); },
-            SolverStep::ChooseColumn { .. }
-              | SolverStep::UncoverColumn(_)
+            SolverStep::SelectColumn { .. }
+              | SolverStep::DeselectColumn(_)
               | SolverStep::ReportSolution(_) => (),
         }
 

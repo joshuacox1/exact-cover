@@ -19,7 +19,7 @@ pub struct PartialCover(
 pub enum SolverStep {
     /// Choose a column (constraint) to enumerate over. The solver always
     /// chooses the lowest-indexed column with the fewest satisfying choices.
-    ChooseColumn {
+    SelectColumn {
         /// The index of the chosen column.
         col: usize,
         /// The number of rows with 1s for this column. This will
@@ -27,13 +27,13 @@ pub enum SolverStep {
         size: usize,
     },
     /// Finished enumerating over this column; bin it.
-    UncoverColumn(usize),
+    DeselectColumn(usize),
     /// Pushes a row onto the list forming the current provisional solution.
     PushRow(usize),
     /// Advances the latest row being considered in the current provisional solution.
     AdvanceRow(usize, usize),
     /// Pops the last row from the list forming the current provisional solution.
     PopRow(usize),
-    /// Reports that the current stack state forms a solution.
+    /// Reports a complete solution.
     ReportSolution(ExactCover),
 }

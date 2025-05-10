@@ -43,7 +43,7 @@ enum FinalState {
 pub struct ExactCoverSolver {
     x: Vec<Node>,
     // Set of row labels. Think about this a bit more...
-    o_for_reporting: Vec<usize>,
+    o: Vec<usize>,
     /// Empty rows. The default behaviour of Algorithm X / Dancing Links
     /// entirely ignores empty rows. For each every solution S we need
     /// to add 2^S solutions, one for each subset of empty rows.
@@ -147,7 +147,7 @@ impl ExactCoverSolver {
         Self {
             x: nodes,
             // think about this... extending as appropriate...
-            o_for_reporting: vec![0; num_cols],
+            o: vec![0; num_cols],
             empty_rows,
             counter_solutions: 0,
             counter_steps: 0,
@@ -168,7 +168,7 @@ impl ExactCoverSolver {
             _ => k = k.saturating_sub(1),
         }
 
-        PartialCover(self.o_for_reporting.iter()
+        PartialCover(self.o.iter()
             .take(k)
             .map(|&r| self.x[r].row_label)
             .collect::<Vec<_>>())
@@ -199,7 +199,7 @@ impl ExactCoverSolver {
             match st {
                 FinalState::Start => {
                     if self.x[HEAD].right == HEAD {
-                        let solution = ExactCover(self.o_for_reporting.iter()
+                        let solution = ExactCover(self.o.iter()
                             .take(k)
                             .map(|&r| self.x[r].row_label)
                             .collect::<Vec<_>>());
@@ -211,7 +211,7 @@ impl ExactCoverSolver {
                         self.stack.push(FinalState::AfterColumnChoice { col_node });
                         self.cover(col_node);
 
-                        return Some(SolverStep::ChooseColumn {
+                        return Some(SolverStep::SelectColumn {
                             col: col_node-1, size });
                     }
                 },
@@ -220,14 +220,14 @@ impl ExactCoverSolver {
                     if r != col_node {
                         // TODO: factor out duplication of first half of the loop.
                         let newrow = self.x[r].row_label;
-                        self.o_for_reporting[k] = r;
+                        self.o[k] = r;
 
                         self.stack.push(FinalState::AfterAddOrReplaceRow { r });
                         return Some(SolverStep::PushRow(newrow));
                     } else {
                         self.uncover(col_node);
 
-                        return Some(SolverStep::UncoverColumn(col_node-1));
+                        return Some(SolverStep::DeselectColumn(col_node-1));
                     }
                 },
                 FinalState::AfterAddOrReplaceRow { r } => {
@@ -242,7 +242,7 @@ impl ExactCoverSolver {
                 }
                 FinalState::Resume => {
                     // Second half of the loop
-                    let mut r = self.o_for_reporting[k];
+                    let mut r = self.o[k];
                     let col_node = self.x[r].col;
 
                     let mut j = self.x[r].left;
@@ -261,7 +261,7 @@ impl ExactCoverSolver {
                     if r != col_node {
                         // TODO: factor out duplication of first half of the loop.
                         let newrow = self.x[r].row_label;
-                        self.o_for_reporting[k] = r;
+                        self.o[k] = r;
 
                         self.stack.push(FinalState::AfterAddOrReplaceRow { r });
 
@@ -274,7 +274,7 @@ impl ExactCoverSolver {
                 },
                 FinalState::AfterRemoveRow { col_node } => {
                     self.uncover(col_node);
-                    return Some(SolverStep::UncoverColumn(col_node-1));
+                    return Some(SolverStep::DeselectColumn(col_node-1));
                 }
             }
         }
@@ -410,7 +410,7 @@ impl Iterator for ExactCoverSolutionOnlyIter {
             match st {
                 SimpleState::Start => {
                     if sv.x[HEAD].right == HEAD {
-                        let solution = ExactCover(sv.o_for_reporting.iter()
+                        let solution = ExactCover(sv.o.iter()
                             .take(k)
                             .map(|&r| sv.x[r].row_label)
                             .collect::<Vec<_>>());
@@ -423,7 +423,7 @@ impl Iterator for ExactCoverSolutionOnlyIter {
 
                     let r = sv.x[col_node].down;
                     if r != col_node {
-                        sv.o_for_reporting[k] = r;
+                        sv.o[k] = r;
 
                         let mut j = sv.x[r].right;
                         while j != r {
@@ -439,7 +439,7 @@ impl Iterator for ExactCoverSolutionOnlyIter {
                 },
                 SimpleState::Resume => {
                     // Second half of the loop
-                    let mut r = sv.o_for_reporting[k];
+                    let mut r = sv.o[k];
                     let col_node = sv.x[r].col;
 
                     let mut j = sv.x[r].left;
@@ -454,7 +454,7 @@ impl Iterator for ExactCoverSolutionOnlyIter {
                     // though now it's a resumption, so we know to REPLACE
                     // and REMOVE
                     if r != col_node {
-                        sv.o_for_reporting[k] = r;
+                        sv.o[k] = r;
 
                         let mut j = sv.x[r].right;
                         while j != r {
