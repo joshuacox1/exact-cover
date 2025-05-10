@@ -23,9 +23,6 @@ fn main() {
     // let now2 = Instant::now();
     // let sol2 = solver2.search_rec();
     // println!("Sol searchrec: {} {}", sol2.len(), now2.elapsed().as_micros());
-    let now4 = Instant::now();
-    let sol4 = ExactCoverSolver::solve_fast(&queens).collect::<Vec<_>>();
-    println!("Sol new iter: {} {}", sol4.len(), now4.elapsed().as_micros());
 
     // println!("Made NQueens object: {}", now.elapsed().as_micros());
     // let spec = queens10.exact_cover_spec();
