@@ -3,7 +3,7 @@ use std::{collections::HashSet, fmt::{Debug, Formatter}, fmt};
 use itertools::Itertools;
 
 use crate::{
-    solver::{ExactCoverSpec, ExactCover},
+    solver::{ExactCover, ExactCoverSpec, PartialCover},
     sparse_binary_matrix::SparseBinaryMatrix,
 
 };
@@ -53,13 +53,15 @@ impl ExactCoverProblem for NQueens {
     }
 
     fn from_exact_cover_solution(&self, solution: &ExactCover) -> Self::TSolution {
-        let mut result = solution.0.iter()
-            .map(|&r| n_queens_row_to_square(r, self.0))
-            .collect::<Vec<_>>();
-        result.sort_unstable();
-        result
+        self.from_vec(&solution.0)
+    }
+
+    fn from_partial_cover_solution(&self, solution: &PartialCover) -> Option<Self::TSolution> {
+        Some(self.from_vec(&solution.0))
     }
 }
+
+
 
 fn n_queens_row_to_square(row: usize, n: usize) -> BoardSquare {
     BoardSquare { row: row.div_euclid(n), column: row.rem_euclid(n) }
@@ -71,6 +73,14 @@ impl NQueens {
 
     /// The `n` for this `n`-queens problem.
     pub fn n(&self) -> usize { self.0 }
+
+    fn from_vec(&self, v: &[usize]) -> Vec<BoardSquare> {
+        let mut result = v.iter()
+            .map(|&r| n_queens_row_to_square(r, self.0))
+            .collect::<Vec<_>>();
+        result.sort_unstable();
+        result
+    }
 
     /// Relatively brute-force method to generate all solutinos (generate all
     /// permutations of N and check for diagonal attacks). It is simple in

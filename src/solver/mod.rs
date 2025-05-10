@@ -10,5 +10,5 @@ mod tests;
 
 pub use input::ExactCoverSpec;
 pub use iterators::{ExactCoverSolutionIter, ExactCoverStepIter};
-pub use output::{ExactCover, SolverStep};
+pub use output::{ExactCover, PartialCover, SolverStep};
 pub use solver::ExactCoverSolver;

@@ -1,4 +1,4 @@
-use crate::solver::{ExactCover, ExactCoverSolver, ExactCoverSpec};
+use crate::solver::{ExactCover, ExactCoverSolver, ExactCoverSpec, PartialCover};
 
 /// A trait for a problem representable as an exact cover problem.
 /// This trait is implemented by various common problems.
@@ -11,6 +11,11 @@ pub trait ExactCoverProblem {
     /// Transforms a solution from the exact cover solver into a
     /// domain-specific solution.
     fn from_exact_cover_solution(&self, s: &ExactCover) -> Self::TSolution;
+
+    /// Optionally transforms a partial solution from the exact cover solver into a
+    /// domain-specific partial solution. Returns an Option as this may not
+    /// always be meaningful.
+    fn from_partial_cover_solution(&self, s: &PartialCover) -> Option<Self::TSolution>;
 
     /// Convenience method to chain creation of the problem spec
     /// and creation of a ready solver.
