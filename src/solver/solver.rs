@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use itertools::Itertools;
 
 use super::{
     ExactCoverSpec, ExactCoverSolutionIter, ExactCoverStepIter,
@@ -179,15 +179,32 @@ impl ExactCoverSolver {
 
     fn step_simple_inner(&mut self, k: usize, steps: &mut Vec<SolverStep>) {
         if self.x[HEAD].right == HEAD {
-            let solution = ExactCover(self.o_for_reporting.iter()
+            let solution = self.o_for_reporting.iter()
                 .take(k)
                 .map(|&r| self.x[r].row_label)
-                .collect::<Vec<_>>());
-            steps.push(SolverStep::ReportSolution(solution));
+                .collect::<Vec<_>>();
+
+            // Hahahaha empty rows. Make this work in stateful land!
+            // This also breaks the assumptions that rows are added
+            // and removed like a stack. No way I'm pretending to add
+            // and remove them at the end. Just accept that empty rows get powersetted
+            // on at the end.
+
+            // Logically unnecessary as the powerset of the empty set works
+            // fine, but to avoid unnecessary work.
+            if self.empty_rows.len() > 0 {
+                for sub in self.empty_rows.iter().powerset() {
+                    let mut new_solution = solution.clone();
+                    new_solution.extend(sub.iter().map(|&a| a));
+                    steps.push(SolverStep::ReportSolution(ExactCover(new_solution)));
+                }
+            } else {
+                steps.push(SolverStep::ReportSolution(ExactCover(solution)));
+            }
             return;
         }
 
-        let (mut col_node, s) = self.col_with_least_ones();
+        let (mut col_node, s) = self.least_col_with_least_ones();
         steps.push(SolverStep::ChooseColumn { col: col_node-1, size: s });
         self.cover(col_node);
 
@@ -244,7 +261,7 @@ impl ExactCoverSolver {
             return;
         }
 
-        let (mut col_node, _) = self.col_with_least_ones();
+        let (mut col_node, _) = self.least_col_with_least_ones();
         // println!("COLUMN CHOICE: {:?}", col_node-1);
         self.cover(col_node);
 
@@ -319,7 +336,7 @@ impl ExactCoverSolver {
     //                     continue;
     //                 }
 
-    //                 let (col_node, _) = self.col_with_least_ones();
+    //                 let (col_node, _) = self.least_col_with_least_ones();
     //                 println!("COLUMN CHOICE: {:?}", col_node-1);
     //                 self.cover(col_node);
 
@@ -421,7 +438,7 @@ impl ExactCoverSolver {
     //                     self.counter_solutions += 1;
     //                     steps.push(SolverStep::ReportSolution(solution));
     //                 } else {
-    //                     let (col_node, size) = self.col_with_least_ones();
+    //                     let (col_node, size) = self.least_col_with_least_ones();
     //                     stack.push(SimpleState::AfterColumnChoice { col_node });
     //                     self.cover(col_node);
 
@@ -551,7 +568,7 @@ impl ExactCoverSolver {
 
                         return Some(SolverStep::ReportSolution(solution));
                     } else {
-                        let (col_node, size) = self.col_with_least_ones();
+                        let (col_node, size) = self.least_col_with_least_ones();
                         self.stack.push(FinalState::AfterColumnChoice { col_node });
                         self.cover(col_node);
 
@@ -653,7 +670,7 @@ impl ExactCoverSolver {
     // all of the cols of relevant size.
     // returns index of the col node. and the smallest size INDEX OF THE COL NODE
     // not the COLUMN
-    fn col_with_least_ones(&self) -> (usize, usize) {
+    fn least_col_with_least_ones(&self) -> (usize, usize) {
         // We know at this point that HEAD.right != HEAD.
         // otherwise we exit early in search.
         // so we don't have to worry about returning
