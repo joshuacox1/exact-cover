@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 /// A solution of the solver, consisting of a strictly increasing
 /// (?! TODO check) list of row indices constituting an exact cover.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,9 +25,6 @@ pub enum SolverStep {
     /// Pushes a row onto the list forming the current provisional solution.
     PushRow(usize),
     /// Advances the latest row being considered in the current provisional solution.
-    /// TODO: now uncover column is its own step, there's not much value in
-    /// this being a separate step compared to a pop followed by a push. Consider
-    /// removal.
     AdvanceRow(usize, usize),
     /// Pops the last row from the list forming the current provisional solution.
     PopRow(usize),

@@ -81,27 +81,20 @@ fn is_exact_cover(m: &SparseBinaryMatrix, cover: &[usize]) -> bool {
 }
 
 // If a solution is reported, it is identical to the current partial solution
-// and is in fact an exact cover. If not, the current partial solution
-// is NOT an exact cover.
+// and is an exact cover. The converse is not true as pushing a row
+// can get you a solution moments before you then get a good answer.
+// todo wtf?!
 fn solutions_exactly_the_exact_covers(s: &ExactCoverSpec)  {
     let m = s.matrix();
     let mut solver = ExactCoverSolver::new(s);
 
-    while let Some(step) = solver.next_step() {
-        let sol = match step {
-            SolverStep::ReportSolution(s) => {
-                let ec = is_exact_cover(&m, &s.0);
-                Some((s, ec))
-            },
-            _ => None,
-        };
+    while let Some(SolverStep::ReportSolution(s)) = solver.next_step() {
+        assert!(is_exact_cover(&m, &s.0));
 
         let partial_sol = solver.current_partial_solution();
-
-        // The solutions are exactly the exact covers.
         let partial_sol_is_exact_cov = is_exact_cover(&m, &partial_sol);
 
-        assert_eq!(partial_sol_is_exact_cov, sol.is_some_and(|(_,ec)| ec));
+        assert!(partial_sol_is_exact_cov);
     }
 }
 
@@ -178,13 +171,34 @@ fn correct_counters_when_solutioning(s: &ExactCoverSpec) {
     }
 }
 
-
+// Donald Knuth's simple example.
+fn knuth_1() -> ExactCoverSpec {
+    let o = false; let x = true;
+    let arrays = [
+        [o,o,x,o,x,x,o],
+        [x,o,o,x,o,o,x],
+        [o,x,x,o,o,x,o],
+        [x,o,o,x,o,o,o],
+        [o,x,o,o,o,o,x],
+        [o,o,o,x,x,o,x],
+    ];
+    let matrix = SparseBinaryMatrix::from_array_2d(arrays);
+    ExactCoverSpec::new_standard(matrix)
+}
 
 fn queens8() -> ExactCoverSpec { NQueens::new(8).exact_cover_spec() }
 
-#[test] fn valid_unique_entry_row_stack_8_queens()                  { valid_unique_entry_row_stack(&queens8());    }
-#[test] fn valid_unique_entry_col_stack_8_queens()                  { valid_unique_entry_col_stack(&queens8());    }
-#[test] fn solutions_exactly_the_exact_covers_8_queens()            { solutions_exactly_the_exact_covers(&queens8());    }
-#[test] fn step_row_stack_and_partial_solution_identical_8_queens() { step_row_stack_and_partial_solution_identical(&queens8());    }
-#[test] fn correct_counters_when_stepping_8_queens()                          { correct_counters_when_stepping(&queens8());    }
-#[test] fn correct_counters_when_solutioning_8_queens()                      { correct_counters_when_solutioning(&queens8()); }
+#[test] fn knuth_1_valid_unique_entry_row_stack()                  { valid_unique_entry_row_stack(&knuth_1());                  }
+#[test] fn knuth_1_valid_unique_entry_col_stack()                  { valid_unique_entry_col_stack(&knuth_1());                  }
+#[test] fn knuth_1_solutions_exactly_the_exact_covers()            { solutions_exactly_the_exact_covers(&knuth_1());            }
+#[test] fn knuth_1_step_row_stack_and_partial_solution_identical() { step_row_stack_and_partial_solution_identical(&knuth_1()); }
+#[test] fn knuth_1_correct_counters_when_stepping()                { correct_counters_when_stepping(&knuth_1());                }
+#[test] fn knuth_1_correct_counters_when_solutioning()             { correct_counters_when_solutioning(&knuth_1());             }
+
+
+#[test] fn queens_8_valid_unique_entry_row_stack()                  { valid_unique_entry_row_stack(&queens8());                  }
+#[test] fn queens_8_valid_unique_entry_col_stack()                  { valid_unique_entry_col_stack(&queens8());                  }
+#[test] fn queens_8_solutions_exactly_the_exact_covers()            { solutions_exactly_the_exact_covers(&queens8());            }
+#[test] fn queens_8_step_row_stack_and_partial_solution_identical() { step_row_stack_and_partial_solution_identical(&queens8()); }
+#[test] fn queens_8_correct_counters_when_stepping()                { correct_counters_when_stepping(&queens8());                }
+#[test] fn queens_8_correct_counters_when_solutioning()             { correct_counters_when_solutioning(&queens8());             }
