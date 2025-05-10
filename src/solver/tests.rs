@@ -6,6 +6,8 @@
 
 // TODO: more test cases. Empty in particular needs to be made to work
 // and also potential edge case to the stack rules!
+// Ensure it returns nothing after it's done. Very likely as the stack
+// is now empty anyway...
 
 
 use crate::{

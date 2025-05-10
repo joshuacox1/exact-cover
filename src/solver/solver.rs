@@ -159,60 +159,6 @@ impl ExactCoverSolver {
         }
     }
 
-    /// Get all solutions to the exact cover problem at once.
-    /// This function *may* be faster than the generator-written versions
-    /// as it does no auxiliary book-keeping. I'm not sure how much the compiler
-    /// can optimise those either. One to benchmark.
-    /// If it's not faster, delete this function.
-    pub fn search_rec(&mut self) -> Vec<ExactCover> {
-        let mut solutions = vec![];
-        self.search_rec_inner(0, &mut solutions);
-        solutions
-    }
-
-    fn search_rec_inner(&mut self, k: usize, solutions: &mut Vec<ExactCover>) {
-        if self.x[HEAD].right == HEAD {
-            let solution = ExactCover(self.o_for_reporting.iter()
-                .take(k)
-                .map(|&r| self.x[r].row_label)
-                .collect::<Vec<_>>());
-            solutions.push(solution);
-            return;
-        }
-
-        let (mut col_node, _) = self.least_col_with_least_ones();
-        self.cover(col_node);
-
-        let mut r = self.x[col_node].down;
-        while r != col_node {
-
-            self.o_for_reporting[k] = r;
-
-            let mut j = self.x[r].right;
-            while j != r {
-                self.cover(self.x[j].col);
-
-                j = self.x[j].right;
-            }
-
-            self.search_rec_inner(k+1, solutions);
-
-            r = self.o_for_reporting[k];
-            col_node = self.x[r].col;
-
-            let mut j = self.x[r].left;
-            while j != r {
-                self.uncover(self.x[j].col);
-
-                j = self.x[j].left;
-            }
-
-            r = self.x[r].down;
-        }
-
-        self.uncover(col_node);
-        return;
-    }
 
     /// The current partial solution, i.e. the solver's current row stack.
     pub fn current_partial_solution(&self) -> PartialCover {
@@ -429,4 +375,110 @@ impl ExactCoverSolver {
 
     /// The number of solver steps performed so far.
     pub fn counter_steps(&self) -> u64 { self.counter_steps }
+
+    /// Fast experimental version?!
+    /// I don't think the speedup from this is great enough to justify
+    /// the complication of the interface. One to delete. TODO
+    pub fn solve_fast(spec: &ExactCoverSpec) -> ExactCoverSolutionOnlyIter {
+        let solver = Self::new(spec);
+        ExactCoverSolutionOnlyIter::new(solver)
+    }
 }
+
+
+enum SimpleState { Start, Resume }
+
+/// An iterator that over all solutions (without bookkeeping) of an
+/// owned `ExactCoverSolver`. Experimental.
+pub struct ExactCoverSolutionOnlyIter {
+    solver: ExactCoverSolver,
+    stack: Vec<SimpleState>,
+}
+
+
+/// Get all solutions to the exact cover problem at once.
+/// This function is a little bit faster, maybe 10-15%, a it doens't
+/// do any bookkeeping. One to think about whether it's worth
+/// having in the spec.
+impl Iterator for ExactCoverSolutionOnlyIter {
+    type Item = ExactCover;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let sv = &mut self.solver;
+        while let Some(st) = self.stack.pop() {
+            let k = self.stack.len();
+            match st {
+                SimpleState::Start => {
+                    if sv.x[HEAD].right == HEAD {
+                        let solution = ExactCover(sv.o_for_reporting.iter()
+                            .take(k)
+                            .map(|&r| sv.x[r].row_label)
+                            .collect::<Vec<_>>());
+
+                        return Some(solution);
+                    }
+
+                    let (col_node, _) = sv.least_col_with_least_ones();
+                    sv.cover(col_node);
+
+                    let r = sv.x[col_node].down;
+                    if r != col_node {
+                        sv.o_for_reporting[k] = r;
+
+                        let mut j = sv.x[r].right;
+                        while j != r {
+                            sv.cover(sv.x[j].col);
+                            j = sv.x[j].right;
+                        }
+
+                        self.stack.push(SimpleState::Resume);
+                        self.stack.push(SimpleState::Start);
+                    } else {
+                        sv.uncover(col_node);
+                    }
+                },
+                SimpleState::Resume => {
+                    // Second half of the loop
+                    let mut r = sv.o_for_reporting[k];
+                    let col_node = sv.x[r].col;
+
+                    let mut j = sv.x[r].left;
+                    while j != r {
+                        sv.uncover(sv.x[j].col);
+
+                        j = sv.x[j].left;
+                    }
+
+                    r = sv.x[r].down;
+                    // First half of the loop again. TODO factor out
+                    // though now it's a resumption, so we know to REPLACE
+                    // and REMOVE
+                    if r != col_node {
+                        sv.o_for_reporting[k] = r;
+
+                        let mut j = sv.x[r].right;
+                        while j != r {
+                            sv.cover(sv.x[j].col);
+                            j = sv.x[j].right;
+                        }
+
+                        self.stack.push(SimpleState::Resume);
+                        self.stack.push(SimpleState::Start);
+                    } else {
+                        sv.uncover(col_node);
+                    }
+                },
+            }
+        }
+
+        None
+    }
+}
+
+impl ExactCoverSolutionOnlyIter {
+    fn new(solver: ExactCoverSolver) -> Self {
+        // TODO: capacity
+        Self { solver, stack: vec![SimpleState::Start] }
+    }
+}
+

@@ -11,14 +11,22 @@ fn main() {
 
     let mut solver1 = ExactCoverSolver::new(&queens);
     let mut solver2 = ExactCoverSolver::new(&queens);
+    let mut solver3 = ExactCoverSolver::new(&queens);
 
     let now1 = Instant::now();
     let sol1 = solver1.iter_solutions().collect::<Vec<_>>();
-    println!("Sol 1: {} {}", sol1.len(), now1.elapsed().as_micros());
+    println!("Sol propersolver: {} {}", sol1.len(), now1.elapsed().as_micros());
 
-    let now2 = Instant::now();
-    let sol2 = solver2.search_rec();
-    println!("Sol 2: {} {}", sol2.len(), now2.elapsed().as_micros());
+    // let now3 = Instant::now();
+    // let sol3 = solver3.search_non_rec();
+    // println!("Sol searchnonrec: {} {}", sol3.len(), now3.elapsed().as_micros());
+    // let now2 = Instant::now();
+    // let sol2 = solver2.search_rec();
+    // println!("Sol searchrec: {} {}", sol2.len(), now2.elapsed().as_micros());
+    let now4 = Instant::now();
+    let sol4 = ExactCoverSolver::solve_fast(&queens).collect::<Vec<_>>();
+    println!("Sol new iter: {} {}", sol4.len(), now4.elapsed().as_micros());
+
     // println!("Made NQueens object: {}", now.elapsed().as_micros());
     // let spec = queens10.exact_cover_spec();
     // println!("Made spec: {}", now.elapsed().as_micros());
