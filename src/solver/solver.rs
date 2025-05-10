@@ -377,7 +377,7 @@ impl ExactCoverSolver {
     pub fn counter_steps(&self) -> u64 { self.counter_steps }
 
     /// The empty rows in the exact cover problem, if any. Since the presence
-    /// of an empty row in the solution doesn't affect the answer.
+    /// of an empty row in the solution doesn't affect the answer, .
     pub fn empty_rows(&self) -> &[usize] {
         &self.empty_rows
     }
