@@ -6,17 +6,18 @@
 //! these iterator wrappers to call next on. This is the same pattern
 //! as used in e.g. standard library HashMap.
 
+use super::input::ExactCoverProblem;
 use super::solver::ExactCoverSolver;
-use super::output::{ExactCover, SolverStep};
+use super::types::SolverStep;
 
 /// An iterator over the remaining solutions from the state of
 /// an `ExactCoverSolver`.
-pub struct ExactCoverSolutionIter<'a> {
-    pub(super) solver: &'a mut ExactCoverSolver,
+pub struct ExactCoverSolutionIter<'a, T> {
+    pub(super) solver: &'a mut ExactCoverSolver<T>,
 }
 
-impl<'a> Iterator for ExactCoverSolutionIter<'a> {
-    type Item = ExactCover;
+impl<'a, T: ExactCoverProblem> Iterator for ExactCoverSolutionIter<'a, T> {
+    type Item = T::TSolution;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.solver.next_solution()
@@ -24,12 +25,12 @@ impl<'a> Iterator for ExactCoverSolutionIter<'a> {
 }
 /// An iterator over the remaining solver steps from the state of
 /// an `ExactCoverSolver`.
-pub struct ExactCoverStepIter<'a> {
-    pub(super) solver: &'a mut ExactCoverSolver,
+pub struct ExactCoverStepIter<'a, T> {
+    pub(super) solver: &'a mut ExactCoverSolver<T>,
 }
 
-impl<'a> Iterator for ExactCoverStepIter<'a> {
-    type Item = SolverStep;
+impl<'a, T: ExactCoverProblem> Iterator for ExactCoverStepIter<'a, T> {
+    type Item = SolverStep<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.solver.next_step()

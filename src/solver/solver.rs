@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use super::{
-    output::PartialCover, ExactCover, ExactCoverSolutionIter, ExactCoverSpec, ExactCoverStepIter, SolverStep
+    input::ExactCoverProblem, types::PartialCover, ExactCover, ExactCoverSolutionIter, ExactCoverSpec, ExactCoverStepIter, SolverStep
 };
 
 // TODO: at some point remove size and row_label
@@ -40,7 +40,8 @@ enum FinalState {
 /// may be interleaved with no problem. The solver also exposes
 /// iterator wrapper interfaces via `.iter_solutions()` and `.iter_steps()`.
 #[derive(Debug)]
-pub struct ExactCoverSolver {
+pub struct ExactCoverSolver<'a, T> {
+    problem: &'a T,
     x: Vec<Node>,
     // Set of row labels. Think about this a bit more...
     o: Vec<usize>,
@@ -59,9 +60,11 @@ pub struct ExactCoverSolver {
 const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
-impl ExactCoverSolver {
+impl<'a, T: ExactCoverProblem> ExactCoverSolver<'a, T> {
     /// Creates a new exact cover solver from a problem specification.
-    pub fn new(problem: &ExactCoverSpec) -> Self {
+    pub fn new(t: &'a T) -> ExactCoverSolver<'a, T> {
+        let problem = t.exact_cover_spec();
+        let problem = problem.as_ref();
         let primary_cols = problem.primary_columns();
         let secondary_cols = problem.secondary_columns();
         let ones = problem.matrix().ordered_points_rows();
@@ -143,8 +146,8 @@ impl ExactCoverSolver {
             }
         }
 
-        
         Self {
+            problem: t,
             x: nodes,
             // think about this... extending as appropriate...
             o: vec![0; num_cols],
@@ -161,31 +164,31 @@ impl ExactCoverSolver {
 
 
     /// The current partial solution, i.e. the solver's current row stack.
-    pub fn current_partial_solution(&self) -> PartialCover {
+    pub fn current_partial_solution(&self) -> T::TPartialSolution {
         let mut k = self.stack.len();
         match self.stack.last() {
             Some(FinalState::AfterAddOrReplaceRow { .. } | FinalState::Resume) => (),
             _ => k = k.saturating_sub(1),
         }
 
-        PartialCover(self.o.iter()
+        self.problem.from_partial_cover_solution(&PartialCover(self.o.iter()
             .take(k)
             .map(|&r| self.x[r].row_label)
-            .collect::<Vec<_>>())
+            .collect::<Vec<_>>()))
     }
 
     /// Return the next solution if there are any remaining.
-    pub fn next_solution(&mut self) -> Option<ExactCover> {
+    pub fn next_solution(&mut self) -> Option<T::TSolution> {
         while let Some(next_step) = self.next_step() {
             if let SolverStep::ReportSolution(s) = next_step {
-                return Some(s);
+                return Some(self.problem.from_exact_cover_solution(&s));
             }
         }
         None
     }
 
     /// Return the next solver step if there are any remaining to take.
-    pub fn next_step(&mut self) -> Option<SolverStep> {
+    pub fn next_step(&mut self) -> Option<SolverStep<T>> {
         let step = self.next_step_inner();
         if step.is_some() {
             self.counter_steps += 1;
@@ -193,7 +196,7 @@ impl ExactCoverSolver {
         step
     }
 
-    fn next_step_inner(&mut self) -> Option<SolverStep> {
+    fn next_step_inner(&mut self) -> Option<SolverStep<T>> {
         while let Some(st) = self.stack.pop() {
             let k = self.stack.len();
             match st {
@@ -283,12 +286,12 @@ impl ExactCoverSolver {
     }
 
     /// Returns an iterator through remaining solutions.
-    pub fn iter_solutions(&mut self) -> ExactCoverSolutionIter {
+    pub fn iter_solutions(&mut self) -> ExactCoverSolutionIter<T> {
         ExactCoverSolutionIter { solver: self }
     }
 
     /// Returns an iterator through remaining solver steps.
-    pub fn iter_steps(&mut self) -> ExactCoverStepIter {
+    pub fn iter_steps(&mut self) -> ExactCoverStepIter<T> {
         ExactCoverStepIter { solver: self }
     }
 
@@ -382,10 +385,10 @@ impl ExactCoverSolver {
         &self.empty_rows
     }
 
-    /// Convenience function to create an exact cover solver and return
-    /// all solutions.
-    pub fn all_solutions(spec: &ExactCoverSpec) -> Vec<ExactCover> {
-        let mut solver = Self::new(&spec);
-        solver.iter_solutions().collect::<Vec<_>>()
-    }
+    // /// Convenience function to create an exact cover solver and return
+    // /// all solutions.
+    // pub fn all_solutions(spec: &ExactCoverSpec) -> Vec<ExactCover> {
+    //     let mut solver = Self::new(&spec);
+    //     solver.iter_solutions().collect::<Vec<_>>()
+    // }
 }

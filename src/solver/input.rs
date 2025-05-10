@@ -1,42 +1,63 @@
 use crate::sparse_binary_matrix::SparseBinaryMatrix;
 
-/// Specification of a generalised exact cover problem.
-pub struct ExactCoverSpec {
-    matrix: SparseBinaryMatrix,
-    secondary_columns: usize,
+use super::{types::ExactCoverSpec, ExactCover, ExactCoverSolver, PartialCover};
+
+/// A generic trait for a problem representable by an exact cover problem.
+/// Includes ways to translate it to and from exact cover problems.
+pub trait ExactCoverProblem {
+    type TSolution;
+    type TPartialSolution;
+
+    /// The associated problem as an exact cover problem spec.
+    fn exact_cover_spec(&self) -> ExactCoverSpec;
+
+    /// Transforms a solution from the exact cover solver into a
+    /// domain-specific solution.
+    fn from_exact_cover_solution(&self, s: &ExactCover) -> Self::TSolution;
+
+    /// Transforms a partial solution from the exact cover solver into a
+    /// domain-specific partial solution.
+    fn from_partial_cover_solution(&self, s: &PartialCover) -> Self::TPartialSolution;
+
+    // /// Convenience method to chain creation of the problem spec
+    // /// and creation of a ready solver.
+    // fn exact_cover_solverc<T: AsRef<Self>>(this: T) -> ExactCoverSolver<Self> {
+    //     ExactCoverSolver::new(this)
+    // }
+
+    // /// Convenience method to immediately return all solutions
+    // /// to the problem.
+    // fn exact_cover_all_solutions(self) -> Vec<Self::TSolution> {
+    //     let mut solver = self.exact_cover_solver();
+    //     solver.iter_solutions().map(|s| self.from_exact_cover_solution(s)).collect::<Vec<_>>()
+    // }
 }
 
-impl ExactCoverSpec {
-    /// Creates a generalised exact cover problem specification from a sparse
-    /// binary matrix and the number of secondary columns.
-    /// Returns an `Err` if and only if `secondary_columns` > `matrix.num_cols()`.
-    pub fn new_general(
-        matrix: SparseBinaryMatrix,
-        secondary_columns: usize,
-    ) -> Result<Self, ()> {
-        if secondary_columns > matrix.num_cols() {
-            Err(())
-        } else {
-            Ok(Self { matrix, secondary_columns })
-        }
+impl AsRef<ExactCoverSpec> for ExactCoverSpec {
+    fn as_ref(&self) -> &Self { self }
+}
+
+impl AsRef<ExactCover> for ExactCover {
+    fn as_ref(&self) -> &Self { self }
+}
+
+impl AsRef<PartialCover> for PartialCover {
+    fn as_ref(&self) -> &Self { self }
+}
+
+impl ExactCoverProblem for ExactCoverSpec {
+    type TSolution = ExactCover;
+    type TPartialSolution = PartialCover;
+
+    fn exact_cover_spec(self) -> ExactCoverSpec {
+        self
     }
 
-    /// Creates a new non-generalised exact cover problem specification
-    /// from a sparse binary matrix.
-    pub fn new_standard(matrix: SparseBinaryMatrix) -> Self {
-        Self::new_general(matrix, 0).unwrap() // infallible
+    fn from_exact_cover_solution(self, s: &ExactCover) -> Self::TSolution {
+        s
     }
 
-    /// The matrix for this exact cover problem specification.
-    pub fn matrix(&self) -> &SparseBinaryMatrix { &self.matrix }
+    fn from_partial_cover_solution(self, s: &PartialCover) -> Self::TPartialSolution {
 
-    /// The number of primary columns for this exact cover problem specification.
-    pub fn primary_columns(&self) -> usize { self.matrix.num_cols() - self.secondary_columns }
-
-    /// The number of secondary columns for this exact cover problem specification.
-    pub fn secondary_columns(&self) -> usize { self.secondary_columns }
-
-    /// Whether this is a generalised exact cover problem (i.e. has
-    /// secondary columns as optional constraints).
-    pub fn generalised(&self) -> bool { self.secondary_columns > 0 }
+    }
 }
