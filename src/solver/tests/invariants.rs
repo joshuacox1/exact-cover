@@ -7,14 +7,11 @@
 // Ensure it returns nothing after it's done. Very likely as the stack
 // is now empty anyway...
 
-
 use crate::{
     problems::{ExactCoverProblem, NQueens},
-    solver::{ExactCoverSolver, ExactCoverSpec, SolverStep},
+    solver::{ExactCoverSolver, ExactCoverSpec, SolverStep, ExactCover},
     sparse_binary_matrix::SparseBinaryMatrix,
 };
-
-use super::ExactCover;
 
 // The row additions and removals reported in solver steps form valid
 // stack operations with the stack containing unique values at all times.
@@ -108,6 +105,8 @@ fn is_exact_cover(m: &SparseBinaryMatrix, cover: &[usize]) -> bool {
 // can get you a solution moments before you then get a good answer.
 // todo wtf?!
 fn solutions_exactly_the_exact_covers(s: &ExactCoverSpec)  {
+    // TODO: only check row operations and knowingly get rid of
+    // empty rows.
     let m = s.matrix();
     let mut solver = ExactCoverSolver::new(s);
 
@@ -125,7 +124,7 @@ fn solutions_exactly_the_exact_covers(s: &ExactCoverSpec)  {
 // identically with the claimed partial solutions after every step.
 // This is non-trivial as the state machine unroll across the loop
 // means that you get off-by-one errors for k depending on the state.
-fn step_row_stack_and_partial_solution_identical(s: &ExactCoverSpec) {
+fn row_step_stack_and_partial_solution_identical(s: &ExactCoverSpec) {
     let mut solver = ExactCoverSolver::new(s);
 
     let mut row_stack = vec![];
@@ -273,7 +272,7 @@ fn queens8() -> ExactCoverSpec { NQueens::new(8).exact_cover_spec() }
 #[test] fn knuth_1_valid_unique_entry_row_stack()                  { valid_unique_entry_row_stack(&knuth_1());                  }
 #[test] fn knuth_1_valid_unique_entry_col_stack()                  { valid_unique_entry_col_stack(&knuth_1());                  }
 #[test] fn knuth_1_solutions_exactly_the_exact_covers()            { solutions_exactly_the_exact_covers(&knuth_1());            }
-#[test] fn knuth_1_step_row_stack_and_partial_solution_identical() { step_row_stack_and_partial_solution_identical(&knuth_1()); }
+#[test] fn knuth_1_row_step_stack_and_partial_solution_identical() { row_step_stack_and_partial_solution_identical(&knuth_1()); }
 #[test] fn knuth_1_correct_counters_when_stepping()                { correct_counters_when_stepping(&knuth_1());                }
 #[test] fn knuth_1_correct_counters_when_solutioning()             { correct_counters_when_solutioning(&knuth_1());             }
 
@@ -281,35 +280,35 @@ fn queens8() -> ExactCoverSpec { NQueens::new(8).exact_cover_spec() }
 #[test] fn queens_8_valid_unique_entry_row_stack()                  { valid_unique_entry_row_stack(&queens8());                  }
 #[test] fn queens_8_valid_unique_entry_col_stack()                  { valid_unique_entry_col_stack(&queens8());                  }
 #[test] fn queens_8_solutions_exactly_the_exact_covers()            { solutions_exactly_the_exact_covers(&queens8());            }
-#[test] fn queens_8_step_row_stack_and_partial_solution_identical() { step_row_stack_and_partial_solution_identical(&queens8()); }
+#[test] fn queens_8_row_step_stack_and_partial_solution_identical() { row_step_stack_and_partial_solution_identical(&queens8()); }
 #[test] fn queens_8_correct_counters_when_stepping()                { correct_counters_when_stepping(&queens8());                }
 #[test] fn queens_8_correct_counters_when_solutioning()             { correct_counters_when_solutioning(&queens8());             }
 
 #[test] fn zero_by_zero_valid_unique_entry_col_stack()                  { valid_unique_entry_col_stack(&zero_by_zero());                  }
 #[test] fn zero_by_zero_valid_unique_entry_row_stack()                  { valid_unique_entry_row_stack(&zero_by_zero());                  }
 #[test] fn zero_by_zero_solutions_exactly_the_exact_covers()            { solutions_exactly_the_exact_covers(&zero_by_zero());            }
-#[test] fn zero_by_zero_step_row_stack_and_partial_solution_identical() { step_row_stack_and_partial_solution_identical(&zero_by_zero()); }
+#[test] fn zero_by_zero_row_step_stack_and_partial_solution_identical() { row_step_stack_and_partial_solution_identical(&zero_by_zero()); }
 #[test] fn zero_by_zero_correct_counters_when_stepping()                { correct_counters_when_stepping(&zero_by_zero());                }
 #[test] fn zero_by_zero_correct_counters_when_solutioning()             { correct_counters_when_solutioning(&zero_by_zero());             }
 
 #[test] fn zero_rows_three_cols_valid_unique_entry_col_stack()                  { valid_unique_entry_col_stack(&zero_rows_three_cols());                  }
 #[test] fn zero_rows_three_cols_valid_unique_entry_row_stack()                  { valid_unique_entry_row_stack(&zero_rows_three_cols());                  }
 #[test] fn zero_rows_three_cols_solutions_exactly_the_exact_covers()            { solutions_exactly_the_exact_covers(&zero_rows_three_cols());            }
-#[test] fn zero_rows_three_cols_step_row_stack_and_partial_solution_identical() { step_row_stack_and_partial_solution_identical(&zero_rows_three_cols()); }
+#[test] fn zero_rows_three_cols_row_step_stack_and_partial_solution_identical() { row_step_stack_and_partial_solution_identical(&zero_rows_three_cols()); }
 #[test] fn zero_rows_three_cols_correct_counters_when_stepping()                { correct_counters_when_stepping(&zero_rows_three_cols());                }
 #[test] fn zero_rows_three_cols_correct_counters_when_solutioning()             { correct_counters_when_solutioning(&zero_rows_three_cols());             }
 
 #[test] fn zero_rows_three_cols_all_secondary_valid_unique_entry_col_stack()                  { valid_unique_entry_col_stack(&zero_rows_three_cols_all_secondary());                  }
 #[test] fn zero_rows_three_cols_all_secondary_valid_unique_entry_row_stack()                  { valid_unique_entry_row_stack(&zero_rows_three_cols_all_secondary());                  }
 #[test] fn zero_rows_three_cols_all_secondary_solutions_exactly_the_exact_covers()            { solutions_exactly_the_exact_covers(&zero_rows_three_cols_all_secondary());            }
-#[test] fn zero_rows_three_cols_all_secondary_step_row_stack_and_partial_solution_identical() { step_row_stack_and_partial_solution_identical(&zero_rows_three_cols_all_secondary()); }
+#[test] fn zero_rows_three_cols_all_secondary_row_step_stack_and_partial_solution_identical() { row_step_stack_and_partial_solution_identical(&zero_rows_three_cols_all_secondary()); }
 #[test] fn zero_rows_three_cols_all_secondary_correct_counters_when_stepping()                { correct_counters_when_stepping(&zero_rows_three_cols_all_secondary());                }
 #[test] fn zero_rows_three_cols_all_secondary_correct_counters_when_solutioning()             { correct_counters_when_solutioning(&zero_rows_three_cols_all_secondary());             }
 
 #[test] fn three_rows_zero_cols_all_secondary_valid_unique_entry_col_stack()                  { valid_unique_entry_col_stack(&three_rows_zero_cols());                  }
 #[test] fn three_rows_zero_cols_all_secondary_valid_unique_entry_row_stack()                  { valid_unique_entry_row_stack(&three_rows_zero_cols());                  }
 #[test] fn three_rows_zero_cols_all_secondary_solutions_exactly_the_exact_covers()            { solutions_exactly_the_exact_covers(&three_rows_zero_cols());            }
-#[test] fn three_rows_zero_cols_all_secondary_step_row_stack_and_partial_solution_identical() { step_row_stack_and_partial_solution_identical(&three_rows_zero_cols()); }
+#[test] fn three_rows_zero_cols_all_secondary_row_step_stack_and_partial_solution_identical() { row_step_stack_and_partial_solution_identical(&three_rows_zero_cols()); }
 #[test] fn three_rows_zero_cols_all_secondary_correct_counters_when_stepping()                { correct_counters_when_stepping(&three_rows_zero_cols());                }
 #[test] fn three_rows_zero_cols_all_secondary_correct_counters_when_solutioning()             { correct_counters_when_solutioning(&three_rows_zero_cols());             }
 

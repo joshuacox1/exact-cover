@@ -376,6 +376,12 @@ impl ExactCoverSolver {
     /// The number of solver steps performed so far.
     pub fn counter_steps(&self) -> u64 { self.counter_steps }
 
+    /// The empty rows in the exact cover problem, if any. Since the presence
+    /// of an empty row in the solution doesn't affect the answer.
+    pub fn empty_rows(&self) -> &[usize] {
+        &self.empty_rows
+    }
+
     /// Convenience function to create an exact cover solver and return
     /// all solutions.
     pub fn all_solutions(spec: &ExactCoverSpec) -> Vec<ExactCover> {
