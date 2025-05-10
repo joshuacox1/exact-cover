@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use super::{
     ExactCoverSpec, ExactCoverSolutionIter, ExactCoverStepIter,
     ExactCover, SolverStep,
@@ -6,7 +8,7 @@ use super::{
 // TODO: at some point remove size and row_label
 // for non-columns. It's a waste of space for most of the nodes.
 #[derive(Debug)]
-pub(super) struct Node {
+struct Node {
     pub left: usize,
     pub right: usize,
     pub up: usize,
@@ -14,6 +16,13 @@ pub(super) struct Node {
     pub col: usize,
     pub row_label: usize,
     pub size: usize,
+}
+
+/// A state of the generator state machine.
+#[derive(Debug)]
+enum State {
+    Start,
+
 }
 
 /// An exact cover solver.
@@ -40,6 +49,8 @@ pub struct ExactCoverSolver {
     empty_rows: Vec<usize>,
     counter_solutions: u64,
     counter_steps: u64,
+    k: usize,
+    current_state: State,
 }
 
 // A generic value for unused values.
@@ -137,6 +148,8 @@ impl ExactCoverSolver {
             empty_rows,
             counter_solutions: 0,
             counter_steps: 0,
+            k: 0,
+            current_state: State::Start,
         }
     }
 
@@ -144,27 +157,42 @@ impl ExactCoverSolver {
     /// This function *may* be faster than the generator-written versions
     /// as it does no auxiliary book-keeping. I'm not sure how much the compiler
     /// can optimise those either. One to benchmark.
-    pub fn all_solutions(&mut self) -> Vec<ExactCover> {
+    /// If it's not faster, delete this function.
+    pub fn search_rec(&mut self) -> Vec<ExactCover> {
         let mut solutions = vec![];
-        self.search_rec(0, &mut solutions);
+        self.search_rec_inner(0, &mut solutions);
         solutions
     }
 
-    fn search_rec(&mut self, k: usize, solutions: &mut Vec<ExactCover>) {
+    fn search_rec_inner(&mut self, k: usize, solutions: &mut Vec<ExactCover>) {
         if self.x[HEAD].right == HEAD {
             let solution = ExactCover(self.o_for_reporting.iter()
                 .take(k)
                 .map(|&r| self.x[r].row_label)
                 .collect::<Vec<_>>());
+            println!("     SOLUTION: {:?}", solution);
             solutions.push(solution);
             return;
         }
 
         let (mut col_node, _) = self.col_with_least_ones();
+        // println!("COLUMN CHOICE: {:?}", col_node-1);
         self.cover(col_node);
 
         let mut r = self.x[col_node].down;
+        let mut prev_row = None;
         while r != col_node {
+            let newrow = self.x[r].row_label;
+            match prev_row {
+                None => {
+                    println!("      ADD ROW: {:?}", newrow);
+                },
+                Some(prow) => {
+                    println!("  REPLACE ROW: {:?}  {:?}", prow, newrow);
+                }
+            }
+            prev_row = Some(newrow);
+
             self.o_for_reporting[k] = r;
 
             let mut j = self.x[r].right;
@@ -174,7 +202,7 @@ impl ExactCoverSolver {
                 j = self.x[j].right;
             }
 
-            self.search_rec(k+1, solutions);
+            self.search_rec_inner(k+1, solutions);
 
             r = self.o_for_reporting[k];
             col_node = self.x[r].col;
@@ -188,9 +216,228 @@ impl ExactCoverSolver {
 
             r = self.x[r].down;
         }
+        if let Some(prow) = prev_row {
+            println!("   REMOVE ROW: {:?}", prow);
+        }
 
         self.uncover(col_node);
         return;
+    }
+
+    // Non-recursive `search`. Intermediate position between
+    // recursive unroll and generator/state-machine translation.
+    pub fn search_non_rec(&mut self) -> Vec<ExactCover> {
+        let mut solutions = vec![];
+        let mut k = 0;
+
+        enum SimpleState {
+            Start,
+            Resume,
+        }
+
+        let mut stack = vec![SimpleState::Start];
+        while let Some(st) = stack.pop() {
+            match st {
+                SimpleState::Start => {
+                    if self.x[HEAD].right == HEAD {
+                        let solution = ExactCover(self.o_for_reporting.iter()
+                            .take(k)
+                            .map(|&r| self.x[r].row_label)
+                            .collect::<Vec<_>>());
+                        println!("     SOLUTION: {:?}", solution);
+                        solutions.push(solution);
+                        k = k.saturating_sub(1);
+                        continue;
+                    }
+
+                    let (col_node, _) = self.col_with_least_ones();
+                    println!("COLUMN CHOICE: {:?}", col_node-1);
+                    self.cover(col_node);
+
+                    let r = self.x[col_node].down;
+                    if r != col_node {
+                        // TODO: factor out duplication of first half of the loop.
+                        let newrow = self.x[r].row_label;
+                        println!("      ADD ROW: {:?}", newrow);
+                        self.o_for_reporting[k] = r;
+
+                        let mut j = self.x[r].right;
+                        while j != r {
+                            self.cover(self.x[j].col);
+                            j = self.x[j].right;
+                        }
+
+                        stack.push(SimpleState::Resume);
+                        k += 1;
+                        stack.push(SimpleState::Start);
+                    } else {
+                        println!("COLUMN UNCHOICE: {:?}", col_node-1);
+                        self.uncover(col_node);
+                        k = k.saturating_sub(1);
+                    }
+                },
+                SimpleState::Resume => {
+                    // Second half of the loop
+                    let mut r = self.o_for_reporting[k];
+                    let col_node = self.x[r].col;
+
+                    let mut j = self.x[r].left;
+                    while j != r {
+                        self.uncover(self.x[j].col);
+
+                        j = self.x[j].left;
+                    }
+
+                    let previous_row = self.x[r].row_label;
+
+                    r = self.x[r].down;
+                    // First half of the loop again. TODO factor out
+                    // though now it's a resumption, so we know to REPLACE
+                    // and REMOVE
+                    if r != col_node {
+                        // TODO: factor out duplication of first half of the loop.
+                        let newrow = self.x[r].row_label;
+                        println!("  REPLACE ROW: {:?}  {:?}", previous_row, newrow);
+                        self.o_for_reporting[k] = r;
+
+                        let mut j = self.x[r].right;
+                        while j != r {
+                            self.cover(self.x[j].col);
+                            j = self.x[j].right;
+                        }
+
+                        stack.push(SimpleState::Resume);
+                        k += 1;
+                        stack.push(SimpleState::Start);
+                    } else {
+                        println!("   REMOVE ROW: {:?}", previous_row);
+                        println!("COLUMN UNCHOICE: {:?}", col_node-1);
+                        self.uncover(col_node);
+                        k = k.saturating_sub(1);
+                    }
+                },
+            }
+        }
+
+        solutions
+    }
+
+    // Non-recursive `search`. Intermediate position between
+    // recursive unroll and generator/state-machine translation.
+    pub fn search_non_rec_single_step(&mut self) -> Vec<SolverStep> {
+        let mut steps = vec![];
+        let mut k = 0;
+
+        enum SimpleState {
+            Start,
+            AfterColumnChoice { col_node: usize },
+            AfterAddOrReplaceRow { r: usize },
+            AfterRemoveRow { col_node: usize },
+            Resume,
+        }
+
+        // increment step if we do anything
+
+        let mut stack = vec![SimpleState::Start];
+        while let Some(st) = stack.pop() {
+            match st {
+                SimpleState::Start => {
+                    if self.x[HEAD].right == HEAD {
+                        let solution = ExactCover(self.o_for_reporting.iter()
+                            .take(k)
+                            .map(|&r| self.x[r].row_label)
+                            .collect::<Vec<_>>());
+                        println!("     SOLUTION: {:?}", solution);
+                        k = k.saturating_sub(1);
+                        self.counter_solutions += 1;
+                        steps.push(SolverStep::ReportSolution(solution));
+                    } else {
+                        let (col_node, size) = self.col_with_least_ones();
+                        stack.push(SimpleState::AfterColumnChoice { col_node });
+                        self.cover(col_node);
+
+                        steps.push(SolverStep::ChooseColumn {
+                            col: col_node-1, size, other_cols: HashSet::new() });
+                    }
+                },
+                SimpleState::AfterColumnChoice { col_node } => {
+                    let r = self.x[col_node].down;
+                    if r != col_node {
+                        // TODO: factor out duplication of first half of the loop.
+                        let newrow = self.x[r].row_label;
+                        self.o_for_reporting[k] = r;
+
+                        println!("      ADD ROW: {:?}", newrow);
+                        stack.push(SimpleState::AfterAddOrReplaceRow { r });
+                        steps.push(SolverStep::PushRow(newrow));
+                    } else {
+                        self.uncover(col_node);
+
+                        // TODO: I think k modifications are going to be difficult
+                        // and might have to happen at the start rather than at the end.
+                        // Matters for partial solution lookup: it needs to make sense
+                        // at all times.
+                        k = k.saturating_sub(1);
+
+                        println!("COLUMN UNCHOICE: {:?}", col_node-1);
+                        // no need to push to stack, we're done
+                        steps.push(SolverStep::UncoverColumn(col_node-1));
+                    }
+                },
+                SimpleState::AfterAddOrReplaceRow { r } => {
+                    let mut j = self.x[r].right;
+                    while j != r {
+                        self.cover(self.x[j].col);
+                        j = self.x[j].right;
+                    }
+
+                    stack.push(SimpleState::Resume);
+                    k += 1;
+                    stack.push(SimpleState::Start);
+                }
+                SimpleState::Resume => {
+                    // Second half of the loop
+                    let mut r = self.o_for_reporting[k];
+                    let col_node = self.x[r].col;
+
+                    let mut j = self.x[r].left;
+                    while j != r {
+                        self.uncover(self.x[j].col);
+
+                        j = self.x[j].left;
+                    }
+
+                    let previous_row = self.x[r].row_label;
+
+                    r = self.x[r].down;
+                    // First half of the loop again. TODO factor out
+                    // though now it's a resumption, so we know to REPLACE
+                    // and REMOVE
+                    if r != col_node {
+                        // TODO: factor out duplication of first half of the loop.
+                        let newrow = self.x[r].row_label;
+                        self.o_for_reporting[k] = r;
+                        println!("  REPLACE ROW: {:?}  {:?}", previous_row, newrow);
+
+                        stack.push(SimpleState::AfterAddOrReplaceRow { r });
+
+                        steps.push(SolverStep::AdvanceRow(previous_row, newrow));
+                    } else {
+                        println!("   REMOVE ROW: {:?}", previous_row);
+                        stack.push(SimpleState::AfterRemoveRow { col_node });
+
+                        steps.push(SolverStep::PopRow(previous_row));
+                    }
+                },
+                SimpleState::AfterRemoveRow { col_node } => {
+                    self.uncover(col_node);
+                    k = k.saturating_sub(1); // comment regarding k as before.
+                    steps.push(SolverStep::UncoverColumn(col_node-1));
+                }
+            }
+        }
+
+        steps
     }
 
     // For debugging. TODO: Delete!
@@ -217,6 +464,20 @@ impl ExactCoverSolver {
     /// Return the next solver step if there are any remaining to take.
     pub fn next_step(&mut self) -> Option<SolverStep> {
         unimplemented!()
+        // self.counter_steps += 1;
+        // match self.current_state {
+        //     State::Start => {
+        //         if self.x[HEAD].right == HEAD {
+        //             let solution = ExactCover(self.o_for_reporting.iter()
+        //                 .take(k)
+        //                 .map(|&r| self.x[r].row_label)
+        //                 .collect::<Vec<_>>());
+        //             println!("     SOLUTION: {:?}", solution);
+        //             solutions.push(solution);
+        //             return;
+        //         }
+        //     },
+        // }
     }
 
     /// Returns an iterator through remaining solutions.

@@ -25,10 +25,12 @@ pub enum SolverStep {
         /// size.
         other_cols: HashSet<usize>,
     },
+    /// Finished enumerating over this column; bin it.
+    UncoverColumn(usize),
     /// Pushes a row onto the list forming the current provisional solution.
     PushRow(usize),
     /// Advances the latest row being considered in the current provisional solution.
-    AdvanceRow(usize),
+    AdvanceRow(usize, usize),
     /// Pops the last row from the list forming the current provisional solution.
     PopRow(usize),
     /// Reports that the current stack state forms a solution.
