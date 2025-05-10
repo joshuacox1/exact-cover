@@ -50,10 +50,9 @@ pub struct ExactCoverSolver {
     /// to add 2^S solutions, one for each subset of empty rows.
     /// TODO: of course test this.
     empty_rows: Vec<usize>,
+
     counter_solutions: u64,
     counter_steps: u64,
-
-    k: usize,
     stack: Vec<FinalState>,
 }
 
@@ -152,7 +151,6 @@ impl ExactCoverSolver {
             empty_rows,
             counter_solutions: 0,
             counter_steps: 0,
-            k: 0,
             stack: vec![FinalState::Start],
         }
     }
@@ -528,8 +526,14 @@ impl ExactCoverSolver {
 
     /// The current partial solution, i.e. the solver's current row stack.
     pub fn current_partial_solution(&self) -> Vec<usize> {
+        let mut k = self.stack.len();
+        match self.stack.last() {
+            Some(FinalState::AfterAddOrReplaceRow { .. } | FinalState::Resume) => (),
+            _ => k = k.saturating_sub(1),
+        }
+
         self.o_for_reporting.iter()
-            .take(self.k)
+            .take(k)
             .map(|&r| self.x[r].row_label)
             .collect::<Vec<_>>()
     }
@@ -543,7 +547,7 @@ impl ExactCoverSolver {
         }
         None
     }
-    
+
     /// Return the next solver step if there are any remaining to take.
     pub fn next_step(&mut self) -> Option<SolverStep> {
         let step = self.next_step_inner();
@@ -555,14 +559,14 @@ impl ExactCoverSolver {
 
     fn next_step_inner(&mut self) -> Option<SolverStep> {
         while let Some(st) = self.stack.pop() {
+            let k = self.stack.len();
             match st {
                 FinalState::Start => {
                     if self.x[HEAD].right == HEAD {
                         let solution = ExactCover(self.o_for_reporting.iter()
-                            .take(self.k)
+                            .take(k)
                             .map(|&r| self.x[r].row_label)
                             .collect::<Vec<_>>());
-                        self.k = self.k.saturating_sub(1);
                         self.counter_solutions += 1;
 
                         return Some(SolverStep::ReportSolution(solution));
@@ -580,18 +584,12 @@ impl ExactCoverSolver {
                     if r != col_node {
                         // TODO: factor out duplication of first half of the loop.
                         let newrow = self.x[r].row_label;
-                        self.o_for_reporting[self.k] = r;
+                        self.o_for_reporting[k] = r;
 
                         self.stack.push(FinalState::AfterAddOrReplaceRow { r });
                         return Some(SolverStep::PushRow(newrow));
                     } else {
                         self.uncover(col_node);
-
-                        // TODO: I think k modifications are going to be difficult
-                        // and might have to happen at the start rather than at the end.
-                        // Matters for partial solution lookup: it needs to make sense
-                        // at all times.
-                        self.k = self.k.saturating_sub(1);
 
                         return Some(SolverStep::UncoverColumn(col_node-1));
                     }
@@ -604,12 +602,11 @@ impl ExactCoverSolver {
                     }
 
                     self.stack.push(FinalState::Resume);
-                    self.k += 1;
                     self.stack.push(FinalState::Start);
                 }
                 FinalState::Resume => {
                     // Second half of the loop
-                    let mut r = self.o_for_reporting[self.k];
+                    let mut r = self.o_for_reporting[k];
                     let col_node = self.x[r].col;
 
                     let mut j = self.x[r].left;
@@ -628,7 +625,7 @@ impl ExactCoverSolver {
                     if r != col_node {
                         // TODO: factor out duplication of first half of the loop.
                         let newrow = self.x[r].row_label;
-                        self.o_for_reporting[self.k] = r;
+                        self.o_for_reporting[k] = r;
 
                         self.stack.push(FinalState::AfterAddOrReplaceRow { r });
 
@@ -641,7 +638,6 @@ impl ExactCoverSolver {
                 },
                 FinalState::AfterRemoveRow { col_node } => {
                     self.uncover(col_node);
-                    self.k = self.k.saturating_sub(1); // comment regarding k as before.
                     return Some(SolverStep::UncoverColumn(col_node-1));
                 }
             }
