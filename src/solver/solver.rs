@@ -375,4 +375,11 @@ impl ExactCoverSolver {
 
     /// The number of solver steps performed so far.
     pub fn counter_steps(&self) -> u64 { self.counter_steps }
+
+    /// Convenience function to create an exact cover solver and return
+    /// all solutions.
+    pub fn all_solutions(spec: &ExactCoverSpec) -> Vec<ExactCover> {
+        let mut solver = Self::new(&spec);
+        solver.iter_solutions().collect::<Vec<_>>()
+    }
 }

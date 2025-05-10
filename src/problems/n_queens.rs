@@ -82,7 +82,7 @@ impl NQueens {
         result
     }
 
-    /// Relatively brute-force method to generate all solutinos (generate all
+    /// Relatively brute-force method to generate all solutions (generate all
     /// permutations of N and check for diagonal attacks). It is simple in
     /// order to be trustworthy to compare to the output of the solver.
     /// If trying larger N, may want to  replace this with a (still
@@ -122,12 +122,6 @@ fn valid_queens<'a>(queens: impl Iterator<Item = &'a BoardSquare>, n: usize) -> 
 #[cfg(test)]
 mod test {
     use super::*;
-
-    // What N to test the N queens on. The brute-force generator is relatively
-    // simple (generate all permutations) in order to be trustworthy to
-    // compare to the output of the solver. If trying larger N, may want to
-    // replace this with a (still pretty simple) backtracking algorithm.
-    const MAX_N_QUEENS: usize = 8;
 
     fn sort_sols(sol: &mut [Vec<BoardSquare>]) {
         for b in sol.iter_mut() {

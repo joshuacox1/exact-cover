@@ -15,17 +15,16 @@ pub struct PartialCover(
 /// A single step of the solver.
 /// The solver logically holds a stack containing the row indices
 /// making up its current provisional solution.
-/// 
+///
 /// Both column and row operations independently form a logical stack
 /// (though this is not stored in explicit form in the solver's internals).
 /// Concretely, for columns, starting with an empty stack, `SelectColumn`
 /// with `col` appends `col` to the stack and `DeselectColumn` pops
-/// its value, which will be the final value in the stack. When the stack
-/// is once again empty, the solver will have finished. For rows, `PushRow`
+/// its value, which will be the final value in the stack. For rows, `PushRow`
 /// and `PopRow` behave similarly, with `AdvanceRow` equivalent to a
 /// pop of `before`, then a push of `after`. This row stack will be equivalent
 /// at all times to a call to `current_partial_solution()`.
-/// 
+///
 /// These invariants are tested in a comprehensive test suite.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SolverStep {
