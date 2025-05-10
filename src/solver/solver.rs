@@ -168,7 +168,9 @@ impl ExactCoverSolver {
         solutions
     }
 
-    /// Source of truth function.
+    /// Source of truth function for steps as it's simple and recursive.
+    /// Should equal the generator version always.
+    /// Delete this once sufficiently confident in the generator version.
     pub fn step_simple(&mut self) -> Vec<SolverStep> {
         let mut steps = vec![];
         self.step_simple_inner(0, &mut steps);
@@ -509,13 +511,10 @@ impl ExactCoverSolver {
 
     /// The current partial solution, i.e. the solver's current row stack.
     pub fn current_partial_solution(&self) -> Vec<usize> {
-        unimplemented!()
-    }
-
-    /// The current subset of rows under consideration. TODO: Isn't this the same as current partial solution?
-    pub fn current_rows(&self) -> Vec<usize> {
-        // blast, it's going to take extra book-keeping to get the rows.
-        unimplemented!()
+        self.o_for_reporting.iter()
+            .take(self.k)
+            .map(|&r| self.x[r].row_label)
+            .collect::<Vec<_>>()
     }
 
     /// Return the next solution if there are any remaining.
@@ -527,9 +526,17 @@ impl ExactCoverSolver {
         }
         None
     }
-
+    
     /// Return the next solver step if there are any remaining to take.
     pub fn next_step(&mut self) -> Option<SolverStep> {
+        let step = self.next_step_inner();
+        if step.is_some() {
+            self.counter_steps += 1;
+        }
+        step
+    }
+
+    fn next_step_inner(&mut self) -> Option<SolverStep> {
         while let Some(st) = self.stack.pop() {
             match st {
                 FinalState::Start => {
