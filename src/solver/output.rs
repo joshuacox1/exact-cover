@@ -1,7 +1,13 @@
-/// A solution of the solver, consisting of a strictly increasing
-/// (?! TODO check) list of row indices constituting an exact cover.
+/// A solution of the solver.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExactCover(
+    /// The inner solution.
+    pub Vec<usize>,
+);
+
+/// A partial solution of the solver.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PartialCover(
     /// The inner solution.
     pub Vec<usize>,
 );

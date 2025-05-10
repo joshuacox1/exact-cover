@@ -1,8 +1,7 @@
 use itertools::Itertools;
 
 use super::{
-    ExactCoverSpec, ExactCoverSolutionIter, ExactCoverStepIter,
-    ExactCover, SolverStep,
+    output::PartialCover, ExactCover, ExactCoverSolutionIter, ExactCoverSpec, ExactCoverStepIter, SolverStep
 };
 
 // TODO: at some point remove size and row_label
@@ -309,17 +308,17 @@ impl ExactCoverSolver {
     }
 
     /// The current partial solution, i.e. the solver's current row stack.
-    pub fn current_partial_solution(&self) -> Vec<usize> {
+    pub fn current_partial_solution(&self) -> PartialCover {
         let mut k = self.stack.len();
         match self.stack.last() {
             Some(FinalState::AfterAddOrReplaceRow { .. } | FinalState::Resume) => (),
             _ => k = k.saturating_sub(1),
         }
 
-        self.o_for_reporting.iter()
+        PartialCover(self.o_for_reporting.iter()
             .take(k)
             .map(|&r| self.x[r].row_label)
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>())
     }
 
     /// Return the next solution if there are any remaining.

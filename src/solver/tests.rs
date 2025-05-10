@@ -91,7 +91,7 @@ fn solutions_exactly_the_exact_covers(s: &ExactCoverSpec)  {
     while let Some(SolverStep::ReportSolution(s)) = solver.next_step() {
         assert!(is_exact_cover(&m, &s.0));
 
-        let partial_sol = solver.current_partial_solution();
+        let partial_sol = solver.current_partial_solution().0;
         let partial_sol_is_exact_cov = is_exact_cover(&m, &partial_sol);
 
         assert!(partial_sol_is_exact_cov);
@@ -119,7 +119,7 @@ fn step_row_stack_and_partial_solution_identical(s: &ExactCoverSpec) {
               | SolverStep::ReportSolution(_) => (),
         }
 
-        let partial = solver.current_partial_solution();
+        let partial = solver.current_partial_solution().0;
         assert_eq!(row_stack, partial);
     }
 }
