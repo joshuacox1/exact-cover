@@ -143,6 +143,7 @@ impl ExactCoverSolver {
             }
         }
 
+        
         Self {
             x: nodes,
             // think about this... extending as appropriate...
@@ -150,7 +151,11 @@ impl ExactCoverSolver {
             empty_rows,
             counter_solutions: 0,
             counter_steps: 0,
-            stack: vec![FinalState::Start],
+            stack: {
+                let mut stack = Vec::with_capacity(num_cols);
+                stack.push(FinalState::Start);
+                stack
+            },
         }
     }
 
@@ -253,28 +258,15 @@ impl ExactCoverSolver {
                 .take(k)
                 .map(|&r| self.x[r].row_label)
                 .collect::<Vec<_>>());
-            println!("     SOLUTION: {:?}", solution);
             solutions.push(solution);
             return;
         }
 
         let (mut col_node, _) = self.least_col_with_least_ones();
-        // println!("COLUMN CHOICE: {:?}", col_node-1);
         self.cover(col_node);
 
         let mut r = self.x[col_node].down;
-        let mut prev_row = None;
         while r != col_node {
-            let newrow = self.x[r].row_label;
-            match prev_row {
-                None => {
-                    println!("      ADD ROW: {:?}", newrow);
-                },
-                Some(prow) => {
-                    println!("  REPLACE ROW: {:?}  {:?}", prow, newrow);
-                }
-            }
-            prev_row = Some(newrow);
 
             self.o_for_reporting[k] = r;
 
@@ -298,9 +290,6 @@ impl ExactCoverSolver {
             }
 
             r = self.x[r].down;
-        }
-        if let Some(prow) = prev_row {
-            println!("   REMOVE ROW: {:?}", prow);
         }
 
         self.uncover(col_node);
