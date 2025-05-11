@@ -1,5 +1,7 @@
 # Exact Cover Solver
 
+work in progress
+
 A fast, efficient solver for the exact cover problem.
 
 - Written in a fast programming language with no garbage collector.
@@ -9,3 +11,12 @@ A fast, efficient solver for the exact cover problem.
 - Written in a generator style so the solver can be started and stopped.
 - Presents a notion of a solver &ldquo;step&rdquo; and methods to advance a step, advance to the next solution, and so on.
 - Has a simple accompanying executable to read and write solutions to files.
+
+## TODOs
+
+- Full special handling for empty rows
+- Get all tests working and make the assertions maximally tight
+- Fill out `SparseBinaryMatrix` with more methods
+- Clarify {Exact, Partial}Cover type interfaces and the ExactCoverProblem interface
+- Add other problems (pentominos, Sudoku, Kakuro, etc.)
+- Investigate proc macros for test generation, in particular product of cases and invariants
