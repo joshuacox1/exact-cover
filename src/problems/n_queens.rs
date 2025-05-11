@@ -132,7 +132,7 @@ mod test {
 
     fn test_n_queens(n: usize) {
         let q = NQueens::new(n);
-        
+
         let brute = sort_sols(&mut q.brute_force());
         let ec = sort_sols(&mut q.exact_cover_all_solutions());
         assert_eq!(brute, ec);

@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 use std::thread::sleep;
+use itertools::Itertools;
 
 use exact_cover_solver::solver::ExactCoverSolver;
 use exact_cover_solver::{problems::{ExactCoverProblem, NQueens}, solver::SolverStep};
@@ -14,8 +15,8 @@ fn main() {
     let mut solver3 = ExactCoverSolver::new(&queens);
 
     let now1 = Instant::now();
-    let sol1 = solver1.iter_solutions().collect::<Vec<_>>();
-    println!("Sol propersolver: {} {}", sol1.len(), now1.elapsed().as_micros());
+    let sol1: usize = solver1.iter_solutions().map(|ec| *ec.to_sorted().last().unwrap()).sum();
+    println!("Sol propersolver: {} {}", sol1, now1.elapsed().as_micros());
 
     // let now3 = Instant::now();
     // let sol3 = solver3.search_non_rec();

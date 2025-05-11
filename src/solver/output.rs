@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 /// A solution of the solver. i.e. a list of unique row indices which form an
 /// exact cover of the problem.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -6,12 +8,28 @@ pub struct ExactCover(
     pub Vec<usize>,
 );
 
+impl ExactCover {
+    /// Consumes the `ExactCover` and returns a sorted list of row indices.
+    pub fn to_sorted(mut self) -> Vec<usize> {
+        self.0.sort_unstable();
+        self.0
+    }
+}
+
 /// A partial solution of the solver.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PartialCover(
     /// The inner solution.
     pub Vec<usize>,
 );
+
+impl PartialCover {
+    /// Consumes the `PartialCover` and returns a sorted list of row indices.
+    pub fn to_sorted(mut self) -> Vec<usize> {
+        self.0.sort_unstable();
+        self.0
+    }
+}
 
 /// A single step of the solver.
 /// The solver logically holds a stack containing the row indices

@@ -100,7 +100,6 @@ impl TestCase for ThreeRowsZeroCols {
     }
 }
 
-
 // TODO: consider writing a proc attribute macro to generate these on the fly.
 // This is especially interesting for when we want to product all tests
 // with all invariants.
