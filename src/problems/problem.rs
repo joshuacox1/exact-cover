@@ -1,32 +1,21 @@
-use crate::solver::{ExactCover, ExactCoverSolver, ExactCoverSpec, PartialCover};
+use crate::solver::{ExactCover, ExactCoverSolver, ExactCoverProblem, PartialCover};
 
 /// A trait for a problem representable as an exact cover problem.
 /// This trait is implemented by various common problems.
-pub trait ExactCoverProblem {
+pub trait ExactCoverRepresentable {
     type TSolution;
+    type TPartialSolution;
 
     /// The associated problem as an exact cover problem spec.
-    fn exact_cover_spec(&self) -> ExactCoverSpec;
+    fn exact_cover_problem(&self) -> ExactCoverProblem;
 
     /// Transforms a solution from the exact cover solver into a
     /// domain-specific solution.
-    fn from_exact_cover_solution(&self, s: &ExactCover) -> Self::TSolution;
+    fn from_exact_cover(&self, s: &ExactCover) -> Self::TSolution;
 
-    /// Optionally transforms a partial solution from the exact cover solver into a
-    /// domain-specific partial solution. Returns an `Option` as this may not
-    /// always be meaningful.
-    fn from_partial_cover_solution(&self, s: &PartialCover) -> Option<Self::TSolution>;
-
-    /// Convenience method to chain creation of the problem spec
-    /// and creation of a ready solver.
-    fn exact_cover_solver(&self) -> ExactCoverSolver {
-        ExactCoverSolver::new(&self.exact_cover_spec())
-    }
-
-    /// Convenience method to immediately return all solutions
-    /// to the problem.
-    fn exact_cover_all_solutions(&self) -> Vec<Self::TSolution> {
-        let mut solver = self.exact_cover_solver();
-        solver.iter_solutions().map(|s| self.from_exact_cover_solution(&s)).collect::<Vec<_>>()
-    }
+    /// Transforms a partial (possibly exact) solution from the
+    /// exact cover solver into a domain-specific partial solution.
+    /// This will often, but not always, look the same as the exact
+    /// cover problem.
+    fn from_partial_cover(&self, s: &PartialCover) -> Self::TPartialSolution;
 }

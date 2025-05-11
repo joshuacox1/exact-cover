@@ -1,12 +1,12 @@
 use crate::sparse_binary_matrix::SparseBinaryMatrix;
 
 /// Specification of a generalised exact cover problem.
-pub struct ExactCoverSpec {
+pub struct ExactCoverProblem {
     matrix: SparseBinaryMatrix,
     secondary_columns: usize,
 }
 
-impl ExactCoverSpec {
+impl ExactCoverProblem {
     /// Creates a generalised exact cover problem specification from a sparse
     /// binary matrix and the number of secondary columns.
     /// Returns an `Err` if and only if `secondary_columns` > `matrix.num_cols()`.

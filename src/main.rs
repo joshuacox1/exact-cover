@@ -3,12 +3,12 @@ use std::thread::sleep;
 use itertools::Itertools;
 
 use exact_cover_solver::solver::ExactCoverSolver;
-use exact_cover_solver::{problems::{ExactCoverProblem, NQueens}, solver::SolverStep};
+use exact_cover_solver::{problems::{ExactCoverRepresentable, NQueens}, solver::SolverStep};
 
 
 fn main() {
     let n = 15;
-    let queens = NQueens::new(n).exact_cover_spec();
+    let queens = NQueens::new(n).exact_cover_problem();
 
     let mut solver1 = ExactCoverSolver::new(&queens);
     let mut solver2 = ExactCoverSolver::new(&queens);

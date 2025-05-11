@@ -3,11 +3,11 @@ use std::{collections::HashSet, fmt::{Debug, Formatter}, fmt};
 use itertools::Itertools;
 
 use crate::{
-    solver::{ExactCover, ExactCoverSpec, PartialCover},
+    solver::{ExactCover, ExactCoverSolver, ExactCoverProblem, PartialCover},
     sparse_binary_matrix::SparseBinaryMatrix,
 
 };
-use super::ExactCoverProblem;
+use super::ExactCoverRepresentable;
 
 /// Create a new representation of an n-queens problem.
 #[derive(Debug, Copy, Clone)]
@@ -23,10 +23,11 @@ impl Debug for BoardSquare {
     }
 }
 
-impl ExactCoverProblem for NQueens {
+impl ExactCoverRepresentable for NQueens {
     type TSolution = Vec<BoardSquare>;
+    type TPartialSolution = Self::TSolution;
 
-    fn exact_cover_spec(&self) -> ExactCoverSpec {
+    fn exact_cover_problem(&self) -> ExactCoverProblem {
         let n = self.0;
         if n > 0 {
             let primary_columns = 2*n;
@@ -41,23 +42,23 @@ impl ExactCoverProblem for NQueens {
                     let diag2_constraint = 4*n + x + n - y - 2;
                     [row_constraint, col_constraint, diag1_constraint, diag2_constraint].into_iter()
                 });
-            // These are both infallible as constructed above. Check the n=0 case though.
+            // These are both infallible as constructed above.
             let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
-            let problem = ExactCoverSpec::new_general(matrix, secondary_columns).unwrap();
+            let problem = ExactCoverProblem::new_general(matrix, secondary_columns).unwrap();
             problem
         } else {
             let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
-            let problem = ExactCoverSpec::new_general(matrix, 0).unwrap();
+            let problem = ExactCoverProblem::new_general(matrix, 0).unwrap();
             problem
         }
     }
 
-    fn from_exact_cover_solution(&self, solution: &ExactCover) -> Self::TSolution {
+    fn from_exact_cover(&self, solution: &ExactCover) -> Self::TSolution {
         self.from_vec(&solution.0)
     }
 
-    fn from_partial_cover_solution(&self, solution: &PartialCover) -> Option<Self::TSolution> {
-        Some(self.from_vec(&solution.0))
+    fn from_partial_cover(&self, solution: &PartialCover) -> Self::TPartialSolution {
+        self.from_vec(&solution.0)
     }
 }
 
@@ -75,10 +76,9 @@ impl NQueens {
     pub fn n(&self) -> usize { self.0 }
 
     fn from_vec(&self, v: &[usize]) -> Vec<BoardSquare> {
-        let mut result = v.iter()
+        let result = v.iter()
             .map(|&r| n_queens_row_to_square(r, self.0))
             .collect::<Vec<_>>();
-        result.sort_unstable();
         result
     }
 
@@ -102,6 +102,14 @@ impl NQueens {
         }
         solutions
     }
+
+    fn doeverything() {
+        let problem = NQueens::new(8);
+        let mut solver = ExactCoverSolver::new(&problem.exact_cover_problem());
+        let solutions = solver.iter_solutions()
+            .map(|s| problem.from_exact_cover(&s))
+            .collect::<Vec<_>>();
+    }
 }
 
 fn valid_queens<'a>(queens: impl Iterator<Item = &'a BoardSquare>, n: usize) -> bool {
@@ -123,7 +131,8 @@ fn valid_queens<'a>(queens: impl Iterator<Item = &'a BoardSquare>, n: usize) -> 
 mod test {
     use super::*;
 
-    fn sort_sols(sol: &mut [Vec<BoardSquare>]) {
+    // Sorts all solutions individually, then sorts the list of solutions itself.
+    fn sort_solutions(sol: &mut [Vec<BoardSquare>]) {
         for b in sol.iter_mut() {
             b.sort_unstable();
         }
@@ -133,8 +142,14 @@ mod test {
     fn test_n_queens(n: usize) {
         let q = NQueens::new(n);
 
-        let brute = sort_sols(&mut q.brute_force());
-        let ec = sort_sols(&mut q.exact_cover_all_solutions());
+        let mut brute = q.brute_force();
+        sort_solutions(&mut brute);
+
+        let mut ec = ExactCoverSolver::new(&q.exact_cover_problem())
+            .iter_solutions()
+            .map(|s| q.from_exact_cover(&s))
+            .collect::<Vec<_>>();
+        sort_solutions(&mut ec);
         assert_eq!(brute, ec);
     }
 

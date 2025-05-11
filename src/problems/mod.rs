@@ -5,4 +5,4 @@ mod n_queens;
 mod problem;
 
 pub use n_queens::NQueens;
-pub use problem::ExactCoverProblem;
+pub use problem::ExactCoverRepresentable;

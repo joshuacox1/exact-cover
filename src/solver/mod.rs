@@ -8,7 +8,7 @@ mod output;
 mod solver;
 mod tests;
 
-pub use spec::ExactCoverSpec;
+pub use spec::ExactCoverProblem;
 pub use iterators::{ExactCoverSolutionIter, ExactCoverStepIter};
 pub use output::{ExactCover, PartialCover, SolverStep};
 pub use solver::ExactCoverSolver;

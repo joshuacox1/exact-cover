@@ -8,14 +8,14 @@
 // is now empty anyway...
 
 use crate::{
-    solver::{ExactCoverSolver, ExactCoverSpec, SolverStep},
+    solver::{ExactCoverSolver, ExactCoverProblem, SolverStep},
     sparse_binary_matrix::SparseBinaryMatrix,
 };
 
 use super::cases::*;
 
 pub(super) trait SolverInvariant {
-    fn assert_invariant(&self, spec: &ExactCoverSpec);
+    fn assert_invariant(&self, spec: &ExactCoverProblem);
 }
 
 /// The row additions and removals reported in solver steps form valid
@@ -23,7 +23,7 @@ pub(super) trait SolverInvariant {
 pub struct ValidUniqueEntryRowStack;
 
 impl SolverInvariant for ValidUniqueEntryRowStack {
-    fn assert_invariant(&self, spec: &ExactCoverSpec) {
+    fn assert_invariant(&self, spec: &ExactCoverProblem) {
         let mut solver = ExactCoverSolver::new(spec);
         let mut row_stack = vec![];
         let mut empty_row_stack_indices = vec![];
@@ -66,7 +66,7 @@ impl SolverInvariant for ValidUniqueEntryRowStack {
 pub struct ValidUniqueEntryColStack;
 
 impl SolverInvariant for ValidUniqueEntryColStack {
-    fn assert_invariant(&self, spec: &ExactCoverSpec) {
+    fn assert_invariant(&self, spec: &ExactCoverProblem) {
         let mut solver = ExactCoverSolver::new(spec);
         let mut col_stack = vec![];
         let mut n = 0;
@@ -115,7 +115,7 @@ fn is_exact_cover(m: &SparseBinaryMatrix, cover: &[usize]) -> bool {
 pub struct SolutionsExactlyTheExactCovers;
 
 impl SolverInvariant for SolutionsExactlyTheExactCovers {
-    fn assert_invariant(&self, spec: &ExactCoverSpec) {
+    fn assert_invariant(&self, spec: &ExactCoverProblem) {
         // TODO: only check row operations so it can be two-way; and knowingly get rid of
         // empty rows.
         let m = spec.matrix();
@@ -139,7 +139,7 @@ impl SolverInvariant for SolutionsExactlyTheExactCovers {
 pub struct RowStepStackIdenticalToPartialSolution;
 
 impl SolverInvariant for RowStepStackIdenticalToPartialSolution {
-    fn assert_invariant(&self, spec: &ExactCoverSpec) {
+    fn assert_invariant(&self, spec: &ExactCoverProblem) {
         // TODO: only check row operations so it can be two-way; and knowingly get rid of
         // empty rows.
         let mut solver = ExactCoverSolver::new(spec);
@@ -168,7 +168,7 @@ impl SolverInvariant for RowStepStackIdenticalToPartialSolution {
 pub struct CorrectCountersWhenStepping;
 
 impl SolverInvariant for CorrectCountersWhenStepping {
-    fn assert_invariant(&self, spec: &ExactCoverSpec) {
+    fn assert_invariant(&self, spec: &ExactCoverProblem) {
         let mut solver = ExactCoverSolver::new(spec);
 
         let mut n = 0;
@@ -199,7 +199,7 @@ impl SolverInvariant for CorrectCountersWhenStepping {
 pub struct CorrectCountersWhenSolutioning;
 
 impl SolverInvariant for CorrectCountersWhenSolutioning {
-    fn assert_invariant(&self, s: &ExactCoverSpec) {
+    fn assert_invariant(&self, s: &ExactCoverProblem) {
         // Obtain correct step counts first
         let mut solver = ExactCoverSolver::new(s);
         let mut n = 0;
