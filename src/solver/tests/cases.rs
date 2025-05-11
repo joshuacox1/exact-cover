@@ -13,6 +13,7 @@ pub trait TestCase {
         let spec = self.spec();
         let actual_sols = ExactCoverSolver::new(&spec)
             .iter_solutions()
+            .map(|mut s| { s.0.sort_unstable(); s })
             .collect::<Vec<_>>();
         // TODO: add solution sorting helper. As it stands this will blow up
         assert_eq!(exp, actual_sols);
@@ -76,7 +77,7 @@ impl TestCase for ZeroRowsThreeColsAllSecondary {
     fn spec(&self) -> ExactCoverProblem {
         let matrix = SparseBinaryMatrix::from_array_2d::<0, 3>([]);
         // As long as there is at leat one primary column...
-        ExactCoverProblem::new_general(matrix, 2).unwrap()
+        ExactCoverProblem::new_general(matrix, 3).unwrap()
     }
 
     fn expected_solutions(&self) -> Vec<ExactCover> {
@@ -110,4 +111,4 @@ impl TestCase for ThreeRowsZeroCols {
 #[test] fn check_solutions_zero_by_zero() { ZeroByZero.assert_solution_match(); }
 #[test] fn check_solutions_zero_rows_three_cols() { ZeroRowsThreeCols.assert_solution_match(); }
 #[test] fn check_solutions_zero_rows_three_cols_all_secondary() { ZeroRowsThreeColsAllSecondary.assert_solution_match(); }
-#[test] fn check_solutions()      { ThreeRowsZeroCols.assert_solution_match(); }
+#[test] fn check_solutions_three_rows_zero_cols()      { ThreeRowsZeroCols.assert_solution_match(); }

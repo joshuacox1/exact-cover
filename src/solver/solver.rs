@@ -103,7 +103,7 @@ impl ExactCoverSolver {
         }
 
         // The last primary column's right wraps around to head.
-        nodes[primary_cols].right = 0;
+        nodes[primary_cols].right = HEAD;
 
         let mut empty_rows = vec![];
         for (i, row) in ones.enumerate() {

@@ -26,8 +26,8 @@ impl SolverInvariant for ValidUniqueEntryRowStack {
     fn assert_invariant(&self, spec: &ExactCoverProblem) {
         let mut solver = ExactCoverSolver::new(spec);
         let mut row_stack = vec![];
-        let mut empty_row_stack_indices = vec![];
         let mut n = 0;
+        let mut empty_row_stack_indices = vec![n];
         for step in solver.iter_steps() {
             match step {
                 SolverStep::PushRow(r) => {
@@ -57,7 +57,7 @@ impl SolverInvariant for ValidUniqueEntryRowStack {
         }
         // After the first step, the next time the row stack is empty
         // (filtering on row steps only) should be the very end.
-        assert_eq!(empty_row_stack_indices, vec![n]);
+        assert_eq!(empty_row_stack_indices, if n == 0 { vec![0] } else { vec![0,n] });
     }
 }
 
@@ -100,16 +100,22 @@ impl SolverInvariant for ValidUniqueEntryColStack {
 }
 
 
-fn is_exact_cover(m: &SparseBinaryMatrix, cover: &[usize]) -> bool {
-    let mut b = vec![0; m.num_cols()];
+fn is_exact_cover(m: &ExactCoverProblem, cover: &[usize]) -> bool {
+    let c = m.columns();
+    let p_c = m.primary_columns();
+    let mut b = vec![0; c];
     for &row in cover {
-        let ones = m.get_row(row).unwrap();
+        let ones = m.matrix().get_row(row).unwrap();
         for &one_pos in ones {
             b[one_pos] += 1;
         }
     }
 
-    b.iter().all(|&col| col == 1)
+    // All primary columns are covered exactly once; all secondary columns
+    // are covered at most once.
+    let primaries = b[0..p_c].iter().all(|&col| col == 1);
+    let secondaries = b[p_c..c].iter().all(|&col| col == 0 || col == 1);
+    primaries && secondaries
 }
 
 pub struct SolutionsExactlyTheExactCovers;
@@ -118,14 +124,13 @@ impl SolverInvariant for SolutionsExactlyTheExactCovers {
     fn assert_invariant(&self, spec: &ExactCoverProblem) {
         // TODO: only check row operations so it can be two-way; and knowingly get rid of
         // empty rows.
-        let m = spec.matrix();
         let mut solver = ExactCoverSolver::new(spec);
 
         while let Some(SolverStep::ReportSolution(s)) = solver.next_step() {
-            assert!(is_exact_cover(&m, &s.0));
+            assert!(is_exact_cover(&spec, &s.0));
 
             let partial_sol = solver.current_partial_solution().0;
-            let partial_sol_is_exact_cov = is_exact_cover(&m, &partial_sol);
+            let partial_sol_is_exact_cov = is_exact_cover(&spec, &partial_sol);
 
             assert!(partial_sol_is_exact_cov);
         }
