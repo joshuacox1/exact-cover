@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 /// A solution of the solver. i.e. a list of unique row indices which form an
 /// exact cover of the problem.
 #[derive(Debug, Clone, PartialEq, Eq)]
