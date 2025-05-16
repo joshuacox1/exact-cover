@@ -3,20 +3,28 @@ use std::thread::sleep;
 use itertools::Itertools;
 
 use exact_cover_solver::solver::ExactCoverSolver;
-use exact_cover_solver::{problems::{ExactCoverProblem, NQueens}, solver::SolverStep};
+use exact_cover_solver::{problems::{ExactCoverRepresentable, NQueens}, solver::SolverStep};
 
 
 fn main() {
     let n = 15;
-    let queens = NQueens::new(n).exact_cover_spec();
+    let queens = NQueens::new(n).exact_cover_problem();
 
-    let mut solver1 = ExactCoverSolver::new(&queens);
-    let mut solver2 = ExactCoverSolver::new(&queens);
-    let mut solver3 = ExactCoverSolver::new(&queens);
+    let mut solver = ExactCoverSolver::new(&queens);
 
-    let now1 = Instant::now();
-    let sol1: usize = solver1.iter_solutions().map(|ec| *ec.to_sorted().last().unwrap()).sum();
-    println!("Sol propersolver: {} {}", sol1, now1.elapsed().as_micros());
+    // let mut w = vec![];
+    while let Some(s) = solver.next_solution() {
+        let q = solver.counter_steps();
+        let s = s.to_sorted();
+        println!("{q}: {s:?}");
+    }
+
+    // for (q, s) in &w {
+    // }
+
+    // let now1 = Instant::now();
+    // let sol1: usize = solver1.iter_solutions().map(|ec| *ec.to_sorted().last().unwrap()).sum();
+    // println!("Sol propersolver: {} {}", sol1, now1.elapsed().as_micros());
 
     // let now3 = Instant::now();
     // let sol3 = solver3.search_non_rec();

@@ -3,15 +3,18 @@
 //! live in the `problems` module. This is because their generation
 //! TODO: have some simple test _step_ cases for fine-grained detail.
 
-use crate::{problems::{ExactCoverProblem, NQueens}, solver::{ExactCover, ExactCoverSolver, ExactCoverSpec}, sparse_binary_matrix::SparseBinaryMatrix};
+use crate::{problems::{ExactCoverRepresentable, NQueens}, solver::{ExactCover, ExactCoverSolver, ExactCoverProblem}, sparse_binary_matrix::SparseBinaryMatrix};
 
 pub trait TestCase {
-    fn spec(&self) -> ExactCoverSpec;
+    fn spec(&self) -> ExactCoverProblem;
     fn expected_solutions(&self) -> Vec<ExactCover>;
     fn assert_solution_match(&self) {
         let exp = self.expected_solutions();
         let spec = self.spec();
-        let actual_sols = ExactCoverSolver::all_solutions(&spec);
+        let actual_sols = ExactCoverSolver::new(&spec)
+            .iter_solutions()
+            .map(|mut s| { s.0.sort_unstable(); s })
+            .collect::<Vec<_>>();
         // TODO: add solution sorting helper. As it stands this will blow up
         assert_eq!(exp, actual_sols);
     }
@@ -20,7 +23,7 @@ pub trait TestCase {
 pub struct KnuthSimple;
 
 impl TestCase for KnuthSimple {
-    fn spec(&self) -> ExactCoverSpec {
+    fn spec(&self) -> ExactCoverProblem {
         let o = false; let x = true;
         let arrays = [
             [o,o,x,o,x,x,o],
@@ -31,7 +34,7 @@ impl TestCase for KnuthSimple {
             [o,o,o,x,x,o,x],
         ];
         let matrix = SparseBinaryMatrix::from_array_2d(arrays);
-        ExactCoverSpec::new_standard(matrix)
+        ExactCoverProblem::new_standard(matrix)
     }
 
     fn expected_solutions(&self) -> Vec<ExactCover> {
@@ -43,9 +46,9 @@ impl TestCase for KnuthSimple {
 pub struct ZeroByZero;
 
 impl TestCase for ZeroByZero {
-    fn spec(&self) -> ExactCoverSpec {
+    fn spec(&self) -> ExactCoverProblem {
         let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
-        ExactCoverSpec::new_general(matrix, 0).unwrap()
+        ExactCoverProblem::new_general(matrix, 0).unwrap()
     }
 
     // You might think no solutions, but there is a solution.
@@ -57,10 +60,10 @@ impl TestCase for ZeroByZero {
 pub struct ZeroRowsThreeCols;
 
 impl TestCase for ZeroRowsThreeCols {
-    fn spec(&self) -> ExactCoverSpec {
+    fn spec(&self) -> ExactCoverProblem {
         let matrix = SparseBinaryMatrix::from_array_2d::<0, 3>([]);
         // As long as there is at leat one primary column...
-        ExactCoverSpec::new_general(matrix, 2).unwrap()
+        ExactCoverProblem::new_general(matrix, 2).unwrap()
     }
 
     fn expected_solutions(&self) -> Vec<ExactCover> {
@@ -71,10 +74,10 @@ impl TestCase for ZeroRowsThreeCols {
 pub struct ZeroRowsThreeColsAllSecondary;
 
 impl TestCase for ZeroRowsThreeColsAllSecondary {
-    fn spec(&self) -> ExactCoverSpec {
+    fn spec(&self) -> ExactCoverProblem {
         let matrix = SparseBinaryMatrix::from_array_2d::<0, 3>([]);
         // As long as there is at leat one primary column...
-        ExactCoverSpec::new_general(matrix, 2).unwrap()
+        ExactCoverProblem::new_general(matrix, 3).unwrap()
     }
 
     fn expected_solutions(&self) -> Vec<ExactCover> {
@@ -85,9 +88,9 @@ impl TestCase for ZeroRowsThreeColsAllSecondary {
 pub struct ThreeRowsZeroCols;
 
 impl TestCase for ThreeRowsZeroCols {
-    fn spec(&self) -> ExactCoverSpec {
+    fn spec(&self) -> ExactCoverProblem {
         let matrix = SparseBinaryMatrix::from_array_2d::<3, 0>([[],[],[]]);
-        ExactCoverSpec::new_general(matrix, 3).unwrap()
+        ExactCoverProblem::new_general(matrix, 3).unwrap()
     }
 
     fn expected_solutions(&self) -> Vec<ExactCover> {
@@ -108,4 +111,4 @@ impl TestCase for ThreeRowsZeroCols {
 #[test] fn check_solutions_zero_by_zero() { ZeroByZero.assert_solution_match(); }
 #[test] fn check_solutions_zero_rows_three_cols() { ZeroRowsThreeCols.assert_solution_match(); }
 #[test] fn check_solutions_zero_rows_three_cols_all_secondary() { ZeroRowsThreeColsAllSecondary.assert_solution_match(); }
-#[test] fn check_solutions()      { ThreeRowsZeroCols.assert_solution_match(); }
+#[test] fn check_solutions_three_rows_zero_cols()      { ThreeRowsZeroCols.assert_solution_match(); }

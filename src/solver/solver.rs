@@ -1,7 +1,9 @@
 use itertools::Itertools;
 
+use crate::problems::ExactCoverRepresentable;
+
 use super::{
-    output::PartialCover, ExactCover, ExactCoverSolutionIter, ExactCoverSpec, ExactCoverStepIter, SolverStep
+    output::PartialCover, ExactCover, ExactCoverSolutionIter, ExactCoverProblem, ExactCoverStepIter, SolverStep
 };
 
 // TODO: at some point remove size and row_label
@@ -60,8 +62,12 @@ const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
+    pub fn new_from_p(problem: &impl ExactCoverRepresentable) -> Self {
+        Self::new(&problem.exact_cover_problem())
+    }
+
     /// Creates a new exact cover solver from a problem specification.
-    pub fn new(problem: &ExactCoverSpec) -> Self {
+    pub fn new(problem: &ExactCoverProblem) -> Self {
         let primary_cols = problem.primary_columns();
         let secondary_cols = problem.secondary_columns();
         let ones = problem.matrix().ordered_points_rows();
@@ -97,7 +103,7 @@ impl ExactCoverSolver {
         }
 
         // The last primary column's right wraps around to head.
-        nodes[primary_cols].right = 0;
+        nodes[primary_cols].right = HEAD;
 
         let mut empty_rows = vec![];
         for (i, row) in ones.enumerate() {
@@ -375,17 +381,4 @@ impl ExactCoverSolver {
 
     /// The number of solver steps performed so far.
     pub fn counter_steps(&self) -> u64 { self.counter_steps }
-
-    /// The empty rows in the exact cover problem, if any. Since the presence
-    /// of an empty row in the solution doesn't affect the answer, .
-    pub fn empty_rows(&self) -> &[usize] {
-        &self.empty_rows
-    }
-
-    /// Convenience function to create an exact cover solver and return
-    /// all solutions.
-    pub fn all_solutions(spec: &ExactCoverSpec) -> Vec<ExactCover> {
-        let mut solver = Self::new(&spec);
-        solver.iter_solutions().collect::<Vec<_>>()
-    }
 }

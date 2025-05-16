@@ -2,7 +2,7 @@
 //! exact cover problems.
 
 mod n_queens;
-mod problem;
+mod representable;
 
 pub use n_queens::NQueens;
-pub use problem::ExactCoverProblem;
+pub use representable::ExactCoverRepresentable;

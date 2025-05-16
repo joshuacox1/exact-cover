@@ -2,13 +2,13 @@
 //! 
 //! TODO: an example of calling the solver.
 
-mod spec;
+mod problem;
 mod iterators;
 mod output;
 mod solver;
 mod tests;
 
-pub use spec::ExactCoverSpec;
+pub use problem::ExactCoverProblem;
 pub use iterators::{ExactCoverSolutionIter, ExactCoverStepIter};
 pub use output::{ExactCover, PartialCover, SolverStep};
 pub use solver::ExactCoverSolver;
