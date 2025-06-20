@@ -1,6 +1,8 @@
-//! Module containing the exact cover solver and associated input/output types.
-//! 
-//! TODO: an example of calling the solver.
+/*! Module containing the exact cover solver and associated
+ * input/output types.
+ *
+ * TODO: an example of calling the solver.
+ */
 
 mod problem;
 mod iterators;
