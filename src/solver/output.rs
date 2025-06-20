@@ -65,3 +65,19 @@ pub enum SolverStep {
     /// Reports a complete solution.
     ReportSolution(ExactCover),
 }
+
+impl SolverStep {
+    pub fn kind(&self) -> SolverStepKind {
+        match self {
+            SolverStep::SelectColumn { .. }
+                | SolverStep::DeselectColumn(_) => SolverStepKind::Column,
+            SolverStep::PushRow(_)
+                | SolverStep::AdvanceRow(_, _)
+                | SolverStep::PopRow(_) => SolverStepKind::Row,
+            SolverStep::ReportSolution(_) => SolverStepKind::ReportSolution,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum SolverStepKind { Column, Row, ReportSolution }

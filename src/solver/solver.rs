@@ -1,13 +1,14 @@
 use itertools::Itertools;
 
-use crate::problems::ExactCoverRepresentable;
+// use crate::problems::ExactCoverRepresentable;
 
 use super::{
-    output::PartialCover, ExactCover, ExactCoverSolutionIter, ExactCoverProblem, ExactCoverStepIter, SolverStep
+    output::PartialCover, ExactCover, ExactCoverSolutionIter,
+    ExactCoverProblem, ExactCoverStepIter, SolverStep,
 };
 
-// TODO: at some point remove size and row_label
-// for non-columns? It's a waste of space for most of the nodes.
+/* TODO: blat this sideways so we don't need to waste space on
+   row labels etc. */
 #[derive(Debug)]
 struct Node {
     left: usize,
@@ -19,7 +20,7 @@ struct Node {
     size: usize,
 }
 
-/// A state of the generator state machine.
+/** A state of the generator state machine. */
 #[derive(Debug)]
 enum FinalState {
     Start,
@@ -29,18 +30,21 @@ enum FinalState {
     Resume,
 }
 
-/// An exact cover solver.
-/// 
-/// An `ExactCoverSolver` must be initialised with an exact cover problem.
-/// It then holds internal state from which it is able to produce
-/// all solutions.
-/// 
-/// The `ExactCoverSolver` exposes two notions of "next": `.next_solution()`
-/// and `.next_step()`. `.next_solution()` runs the solver forward until the
-/// next solution is found, if one exists; `.next_step()` runs the solver
-/// until the next discrete solver step, if there are any. Calls to these
-/// may be interleaved with no problem. The solver also exposes
-/// iterator wrapper interfaces via `.iter_solutions()` and `.iter_steps()`.
+/**
+ * An exact cover solver.
+ *
+ * An `ExactCoverSolver` must be initialised with an exact cover
+ * problem. It then holds internal state from which it is able to
+ * produce all solutions.
+ *
+ * The `ExactCoverSolver` exposes two notions of "next":
+ * `.next_solution()` and `.next_step()`. `.next_solution()` runs
+ * the solver forward until the next solution is found, if one exists;
+ * `.next_step()` runs the solver until the next discrete solver
+ * step, if there are any. Calls to these may be interleaved with
+ * no problem. The solver also exposes iterator wrapper interfaces
+ * via `.iter_solutions()` and `.iter_steps()`.
+ */
 #[derive(Debug)]
 pub struct ExactCoverSolver {
     x: Vec<Node>,
@@ -62,9 +66,9 @@ const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
-    pub fn new_from_p(problem: &impl ExactCoverRepresentable) -> Self {
-        Self::new(&problem.exact_cover_problem())
-    }
+    // pub fn new_from_p(problem: &impl ExactCoverRepresentable) -> Self {
+    //     Self::new(&problem.exact_cover_problem())
+    // }
 
     /// Creates a new exact cover solver from a problem specification.
     pub fn new(problem: &ExactCoverProblem) -> Self {
@@ -203,85 +207,85 @@ impl ExactCoverSolver {
         while let Some(st) = self.stack.pop() {
             let k = self.stack.len();
             match st {
-                FinalState::Start => {
-                    if self.x[HEAD].right == HEAD {
-                        let solution = ExactCover(self.o.iter()
-                            .take(k)
-                            .map(|&r| self.x[r].row_label)
-                            .collect::<Vec<_>>());
-                        self.counter_solutions += 1;
+            FinalState::Start => {
+                if self.x[HEAD].right == HEAD {
+                    let solution = ExactCover(self.o.iter()
+                        .take(k)
+                        .map(|&r| self.x[r].row_label)
+                        .collect::<Vec<_>>());
+                    self.counter_solutions += 1;
 
-                        return Some(SolverStep::ReportSolution(solution));
-                    } else {
-                        let (col_node, size) = self.least_col_with_least_ones();
-                        self.stack.push(FinalState::AfterColumnChoice { col_node });
-                        self.cover(col_node);
+                    return Some(SolverStep::ReportSolution(solution));
+                } else {
+                    let (col_node, size) = self.least_col_with_least_ones();
+                    self.stack.push(FinalState::AfterColumnChoice { col_node });
+                    self.cover(col_node);
 
-                        return Some(SolverStep::SelectColumn {
-                            col: col_node-1, size });
-                    }
-                },
-                FinalState::AfterColumnChoice { col_node } => {
-                    let r = self.x[col_node].down;
-                    if r != col_node {
-                        // TODO: factor out duplication of first half of the loop.
-                        let newrow = self.x[r].row_label;
-                        self.o[k] = r;
-
-                        self.stack.push(FinalState::AfterAddOrReplaceRow { r });
-                        return Some(SolverStep::PushRow(newrow));
-                    } else {
-                        self.uncover(col_node);
-
-                        return Some(SolverStep::DeselectColumn(col_node-1));
-                    }
-                },
-                FinalState::AfterAddOrReplaceRow { r } => {
-                    let mut j = self.x[r].right;
-                    while j != r {
-                        self.cover(self.x[j].col);
-                        j = self.x[j].right;
-                    }
-
-                    self.stack.push(FinalState::Resume);
-                    self.stack.push(FinalState::Start);
+                    return Some(SolverStep::SelectColumn {
+                        col: col_node-1, size });
                 }
-                FinalState::Resume => {
-                    // Second half of the loop
-                    let mut r = self.o[k];
-                    let col_node = self.x[r].col;
+            },
+            FinalState::AfterColumnChoice { col_node } => {
+                let r = self.x[col_node].down;
+                if r != col_node {
+                    // TODO: factor out duplication of first half of the loop.
+                    let newrow = self.x[r].row_label;
+                    self.o[k] = r;
 
-                    let mut j = self.x[r].left;
-                    while j != r {
-                        self.uncover(self.x[j].col);
-
-                        j = self.x[j].left;
-                    }
-
-                    let previous_row = self.x[r].row_label;
-
-                    r = self.x[r].down;
-                    // First half of the loop again. TODO factor out
-                    // though now it's a resumption, so we know to REPLACE
-                    // and REMOVE
-                    if r != col_node {
-                        // TODO: factor out duplication of first half of the loop.
-                        let newrow = self.x[r].row_label;
-                        self.o[k] = r;
-
-                        self.stack.push(FinalState::AfterAddOrReplaceRow { r });
-
-                        return Some(SolverStep::AdvanceRow(previous_row, newrow));
-                    } else {
-                        self.stack.push(FinalState::AfterRemoveRow { col_node });
-
-                        return Some(SolverStep::PopRow(previous_row));
-                    }
-                },
-                FinalState::AfterRemoveRow { col_node } => {
+                    self.stack.push(FinalState::AfterAddOrReplaceRow { r });
+                    return Some(SolverStep::PushRow(newrow));
+                } else {
                     self.uncover(col_node);
+
                     return Some(SolverStep::DeselectColumn(col_node-1));
                 }
+            },
+            FinalState::AfterAddOrReplaceRow { r } => {
+                let mut j = self.x[r].right;
+                while j != r {
+                    self.cover(self.x[j].col);
+                    j = self.x[j].right;
+                }
+
+                self.stack.push(FinalState::Resume);
+                self.stack.push(FinalState::Start);
+            }
+            FinalState::Resume => {
+                // Second half of the loop
+                let mut r = self.o[k];
+                let col_node = self.x[r].col;
+
+                let mut j = self.x[r].left;
+                while j != r {
+                    self.uncover(self.x[j].col);
+
+                    j = self.x[j].left;
+                }
+
+                let previous_row = self.x[r].row_label;
+
+                r = self.x[r].down;
+                // First half of the loop again. TODO factor out
+                // though now it's a resumption, so we know to REPLACE
+                // and REMOVE
+                if r != col_node {
+                    // TODO: factor out duplication of first half of the loop.
+                    let newrow = self.x[r].row_label;
+                    self.o[k] = r;
+
+                    self.stack.push(FinalState::AfterAddOrReplaceRow { r });
+
+                    return Some(SolverStep::AdvanceRow(previous_row, newrow));
+                } else {
+                    self.stack.push(FinalState::AfterRemoveRow { col_node });
+
+                    return Some(SolverStep::PopRow(previous_row));
+                }
+            },
+            FinalState::AfterRemoveRow { col_node } => {
+                self.uncover(col_node);
+                return Some(SolverStep::DeselectColumn(col_node-1));
+            }
             }
         }
 
