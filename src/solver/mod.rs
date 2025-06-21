@@ -5,10 +5,12 @@
 mod problem;
 mod iterators;
 mod output;
+mod representable;
 mod solver;
 mod tests;
 
 pub use problem::ExactCoverProblem;
-pub use iterators::{ExactCoverSolutionIter, ExactCoverStepIter};
+pub use iterators::{Solutions, SolverSteps};
 pub use output::{ExactCover, PartialCover, SolverStep};
 pub use solver::ExactCoverSolver;
+pub use representable::ExactCoverRepresentable;

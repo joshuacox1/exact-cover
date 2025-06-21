@@ -1,9 +1,7 @@
 use itertools::Itertools;
 
-use crate::problems::ExactCoverRepresentable;
-
 use super::{
-    output::PartialCover, ExactCover, ExactCoverSolutionIter, ExactCoverProblem, ExactCoverStepIter, SolverStep
+    output::PartialCover, ExactCover, Solutions, ExactCoverProblem, SolverSteps, SolverStep
 };
 
 // TODO: at some point remove size and row_label
@@ -62,10 +60,6 @@ const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
 impl ExactCoverSolver {
-    pub fn new_from_p(problem: &impl ExactCoverRepresentable) -> Self {
-        Self::new(&problem.exact_cover_problem())
-    }
-
     /// Creates a new exact cover solver from a problem specification.
     pub fn new(problem: &ExactCoverProblem) -> Self {
         let primary_cols = problem.primary_columns();
@@ -289,13 +283,13 @@ impl ExactCoverSolver {
     }
 
     /// Returns an iterator through remaining solutions.
-    pub fn iter_solutions(&mut self) -> ExactCoverSolutionIter {
-        ExactCoverSolutionIter { solver: self }
+    pub fn iter_solutions(&mut self) -> Solutions {
+        Solutions { solver: self }
     }
 
     /// Returns an iterator through remaining solver steps.
-    pub fn iter_steps(&mut self) -> ExactCoverStepIter {
-        ExactCoverStepIter { solver: self }
+    pub fn iter_steps(&mut self) -> SolverSteps {
+        SolverSteps { solver: self }
     }
 
     // TODO. When just solving efficiently, we will simply want to return the col

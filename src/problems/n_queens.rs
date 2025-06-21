@@ -3,11 +3,13 @@ use std::{collections::HashSet, fmt::{Debug, Formatter}, fmt};
 use itertools::Itertools;
 
 use crate::{
-    solver::{ExactCover, ExactCoverSolver, ExactCoverProblem, PartialCover},
+    solver::{
+        ExactCover, ExactCoverSolver, ExactCoverProblem, PartialCover,
+        ExactCoverRepresentable,
+    },
     sparse_binary_matrix::SparseBinaryMatrix,
 
 };
-use super::ExactCoverRepresentable;
 
 /// Create a new representation of an n-queens problem.
 #[derive(Debug, Copy, Clone)]
