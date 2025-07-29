@@ -1,7 +1,8 @@
 use itertools::Itertools;
 
 use super::{
-    output::PartialCover, ExactCover, Solutions, ExactCoverProblem, SolverSteps, SolverStep
+    output::PartialCover, ExactCover, Solutions, ExactCoverProblem,
+    SolverSteps, SolverStep
 };
 
 // TODO: at some point remove size and row_label
@@ -49,9 +50,6 @@ pub struct ExactCoverSolver {
     /// to add 2^S solutions, one for each subset of empty rows.
     /// TODO: of course test this.
     empty_rows: Vec<usize>,
-
-    counter_solutions: u64,
-    counter_steps: u64,
     stack: Vec<FinalState>,
 }
 
@@ -149,8 +147,6 @@ impl ExactCoverSolver {
             // think about this... extending as appropriate...
             o: vec![0; num_cols],
             empty_rows,
-            counter_solutions: 0,
-            counter_steps: 0,
             stack: {
                 let mut stack = Vec::with_capacity(num_cols);
                 stack.push(FinalState::Start);
@@ -186,14 +182,6 @@ impl ExactCoverSolver {
 
     /// Return the next solver step if there are any remaining to take.
     pub fn next_step(&mut self) -> Option<SolverStep> {
-        let step = self.next_step_inner();
-        if step.is_some() {
-            self.counter_steps += 1;
-        }
-        step
-    }
-
-    fn next_step_inner(&mut self) -> Option<SolverStep> {
         while let Some(st) = self.stack.pop() {
             let k = self.stack.len();
             match st {
@@ -203,31 +191,40 @@ impl ExactCoverSolver {
                             .take(k)
                             .map(|&r| self.x[r].row_label)
                             .collect::<Vec<_>>());
-                        self.counter_solutions += 1;
 
-                        return Some(SolverStep::ReportSolution(solution));
+                        return Some(
+                            SolverStep::ReportSolution(solution)
+                        );
                     } else {
-                        let (col_node, size) = self.least_col_with_least_ones();
-                        self.stack.push(FinalState::AfterColumnChoice { col_node });
+                        let (col_node, size) = self
+                            .least_col_with_least_ones();
+                        self.stack.push(
+                            FinalState::AfterColumnChoice { col_node }
+                        );
                         self.cover(col_node);
 
                         return Some(SolverStep::SelectColumn {
-                            col: col_node-1, size });
+                            col: col_node-1, size
+                        });
                     }
                 },
                 FinalState::AfterColumnChoice { col_node } => {
                     let r = self.x[col_node].down;
                     if r != col_node {
-                        // TODO: factor out duplication of first half of the loop.
+                        // TODO: factor out duplication of first
+                        // half of the loop.
                         let newrow = self.x[r].row_label;
                         self.o[k] = r;
 
-                        self.stack.push(FinalState::AfterAddOrReplaceRow { r });
+                        self.stack.push(
+                            FinalState::AfterAddOrReplaceRow { r }
+                        );
                         return Some(SolverStep::PushRow(newrow));
                     } else {
                         self.uncover(col_node);
-
-                        return Some(SolverStep::DeselectColumn(col_node-1));
+                        return Some(
+                            SolverStep::DeselectColumn(col_node-1)
+                        );
                     }
                 },
                 FinalState::AfterAddOrReplaceRow { r } => {
@@ -256,18 +253,25 @@ impl ExactCoverSolver {
 
                     r = self.x[r].down;
                     // First half of the loop again. TODO factor out
-                    // though now it's a resumption, so we know to REPLACE
-                    // and REMOVE
+                    // though now it's a resumption, so we know to
+                    // REPLACE and REMOVE
                     if r != col_node {
-                        // TODO: factor out duplication of first half of the loop.
+                        // TODO: factor out duplication of first half
+                        // of the loop.
                         let newrow = self.x[r].row_label;
                         self.o[k] = r;
 
-                        self.stack.push(FinalState::AfterAddOrReplaceRow { r });
+                        self.stack.push(
+                            FinalState::AfterAddOrReplaceRow { r }
+                        );
 
-                        return Some(SolverStep::AdvanceRow(previous_row, newrow));
+                        return Some(SolverStep::AdvanceRow(
+                            previous_row, newrow
+                        ));
                     } else {
-                        self.stack.push(FinalState::AfterRemoveRow { col_node });
+                        self.stack.push(
+                            FinalState::AfterRemoveRow { col_node }
+                        );
 
                         return Some(SolverStep::PopRow(previous_row));
                     }
@@ -369,10 +373,4 @@ impl ExactCoverSolver {
         let l = self.x[c].left;
         self.x[l].right = c;
     }
-
-    /// The number of solutions seen so far.
-    pub fn counter_solutions(&self) -> u64 { self.counter_solutions }
-
-    /// The number of solver steps performed so far.
-    pub fn counter_steps(&self) -> u64 { self.counter_steps }
 }
