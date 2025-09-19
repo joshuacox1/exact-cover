@@ -5,8 +5,9 @@ use super::{
     SolverSteps, SolverStep
 };
 
-// TODO: at some point remove size and row_label
-// for non-columns? It's a waste of space for most of the nodes.
+// TODO: change internal layout so we don't waste space
+// for size and row label for non-columns.
+// TODO: remove all allocations?
 #[derive(Debug)]
 struct Node {
     left: usize,
@@ -295,11 +296,8 @@ impl ExactCoverSolver {
         SolverSteps { solver: self }
     }
 
-    // TODO. When just solving efficiently, we will simply want to return the col
-    // (and maybe the size). But for diagnostic purposes, we may want to return
-    // all of the cols of relevant size.
-    // returns index of the col node. and the smallest size INDEX OF THE COL NODE
-    // not the COLUMN
+    // Returns index of the col node NOT THE COLUMN.
+    // and the smallest size.
     fn least_col_with_least_ones(&self) -> (usize, usize) {
         // We know at this point that HEAD.right != HEAD.
         // otherwise we exit early in search.
