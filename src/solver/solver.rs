@@ -72,6 +72,37 @@ const MAX_COLS: usize = 4096;
 const MAX_ROWS: usize = 4096;
 const MAX_ONES: usize = 65536; // 1,048,576. Or just 65536?
 
+
+// Let's do some maths.
+// Currently we'll ignore the empty_rows set.
+// We have three constants: MAX_COLS, MAX_ROWS, and MAX_ONES.
+// (we ensure that MAX_ONES >= MAX_ROWS and MAX_ONES >= MAX_COLS)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 impl ExactCoverSolver {
     pub fn memory_reqs(
         num_cols: usize,
