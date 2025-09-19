@@ -1,5 +1,5 @@
+use bumpalo::Bump;
 use arrayvec::ArrayVec;
-
 use itertools::Itertools;
 
 use super::{
@@ -39,11 +39,11 @@ enum FinalState {
 }
 
 /// An exact cover solver.
-/// 
+///
 /// An `ExactCoverSolver` must be initialised with an exact cover problem.
 /// It then holds internal state from which it is able to produce
 /// all solutions.
-/// 
+///
 /// The `ExactCoverSolver` exposes two notions of "next": `.next_solution()`
 /// and `.next_step()`. `.next_solution()` runs the solver forward until the
 /// next solution is found, if one exists; `.next_step()` runs the solver
@@ -52,16 +52,16 @@ enum FinalState {
 /// iterator wrapper interfaces via `.iter_solutions()` and `.iter_steps()`.
 #[derive(Debug)]
 pub struct ExactCoverSolver {
-    x: ArrayVec<Node, MAX_ONES>,
+    x: Vec<Node>,
     // Set of row labels constituting the current solution.
-    o: [usize; MAX_COLS],
+    o: Vec<usize>,
     /// Empty rows. The default behaviour of Algorithm X / Dancing Links
     /// entirely ignores empty rows. For each every solution S we need
     /// to add 2^S solutions, one for each subset of empty rows.
     /// TODO: of course test this.
-    empty_rows: ArrayVec<usize, MAX_ROWS>,
+    empty_rows: Vec<usize>,
     // bounded by num columns
-    stack: ArrayVec<FinalState, MAX_COLS>,
+    stack: Vec<FinalState>,
 }
 
 // A generic value for unused values.
@@ -70,13 +70,16 @@ const HEAD: usize = 0;
 
 const MAX_COLS: usize = 4096;
 const MAX_ROWS: usize = 4096;
-const MAX_ONES: usize = 65536; // 1,048,576. Or just 65536?
+const MAX_ONES: usize = 65536 - MAX_COLS;
 
 
 // Let's do some maths.
 // Currently we'll ignore the empty_rows set.
 // We have three constants: MAX_COLS, MAX_ROWS, and MAX_ONES.
 // (we ensure that MAX_ONES >= MAX_ROWS and MAX_ONES >= MAX_COLS)
+
+type ENTRY_IDX = u16;
+type COL_OR_ROW_IDX = u16;
 
 
 
@@ -143,8 +146,7 @@ impl ExactCoverSolver {
             up: UNUSED, down: UNUSED,
             col: UNUSED, size: UNUSED, row_label: UNUSED,
         };
-        let mut nodes = ArrayVec::new();
-        nodes.push(root);
+        let mut nodes = vec![root];
 
         // The column headers live at indices 1 to
         // num_cols of the node list. Head nodes above num_primary_cols
@@ -167,7 +169,7 @@ impl ExactCoverSolver {
         // The last primary column's right wraps around to head.
         nodes[primary_cols].right = HEAD;
 
-        let mut empty_rows = ArrayVec::new();
+        let mut empty_rows = vec![];
         for (i, row) in ones.enumerate() {
             let mut first_of_row = None;
 
@@ -211,20 +213,11 @@ impl ExactCoverSolver {
             }
         }
 
-        // assert col sizes
-        // assert num nodes(?) num ints
-        assert!(num_cols <= MAX_COLS);
-
         Self {
             x: nodes,
-            // think about this... extending as appropriate...
-            o: [0; MAX_COLS],
+            o: vec![0; num_cols],
             empty_rows,
-            stack: {
-                let mut stack = ArrayVec::new();
-                stack.push(FinalState::Start);
-                stack
-            },
+            stack: vec![FinalState::Start],
         }
     }
 

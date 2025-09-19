@@ -1,4 +1,6 @@
 use std::time::{Duration, Instant};
+use bumpalo::Bump;
+
 use std::thread::sleep;
 use itertools::Itertools;
 
@@ -9,7 +11,8 @@ use exact_cover_solver::NQueens;
 
 
 fn main() {
-    let n = 15;
+    let n = 14;
+
     let queens = Box::new(NQueens::new(n).exact_cover_problem());
     println!("Memoryreqs: {}",
         ExactCoverSolver::memory_reqs(88, 225, 900));
@@ -24,7 +27,7 @@ fn main() {
         queens.num_ones(),
     );
 
-    let mut solver = ExactCoverSolver::new(&queens);
+    let mut solver = Box::new(ExactCoverSolver::new(&queens));
     let p = solver.iter_solutions().count();
 
     println!("{p}");
