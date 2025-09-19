@@ -1,3 +1,5 @@
+use arrayvec::ArrayVec;
+
 use itertools::Itertools;
 
 use super::{
@@ -8,6 +10,13 @@ use super::{
 // TODO: change internal layout so we don't waste space
 // for size and row label for non-columns.
 // TODO: remove all allocations?
+// - The root node only uses left and right.
+// - Column nodes use LRUD, col points to themselves so unnecessary,
+// no row-label.
+// - Ordinary nodes use LRUD col row_label. No size.
+// The size of this entire structure is something like
+// 1 + numcolumns + numones + the stack + #emptyrows (bounded by rows?)
+// + the current working solution
 #[derive(Debug)]
 struct Node {
     left: usize,
@@ -43,22 +52,50 @@ enum FinalState {
 /// iterator wrapper interfaces via `.iter_solutions()` and `.iter_steps()`.
 #[derive(Debug)]
 pub struct ExactCoverSolver {
-    x: Vec<Node>,
-    // Set of row labels. Think about this a bit more...
-    o: Vec<usize>,
+    x: ArrayVec<Node, MAX_ONES>,
+    // Set of row labels constituting the current solution.
+    o: [usize; MAX_COLS],
     /// Empty rows. The default behaviour of Algorithm X / Dancing Links
     /// entirely ignores empty rows. For each every solution S we need
     /// to add 2^S solutions, one for each subset of empty rows.
     /// TODO: of course test this.
-    empty_rows: Vec<usize>,
-    stack: Vec<FinalState>,
+    empty_rows: ArrayVec<usize, MAX_ROWS>,
+    // bounded by num columns
+    stack: ArrayVec<FinalState, MAX_COLS>,
 }
 
 // A generic value for unused values.
 const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
+const MAX_COLS: usize = 4096;
+const MAX_ROWS: usize = 4096;
+const MAX_ONES: usize = 65536; // 1,048,576. Or just 65536?
+
 impl ExactCoverSolver {
+    pub fn memory_reqs(
+        num_cols: usize,
+        num_rows: usize,
+        num_ones: usize) -> usize {
+        // Since we are currently uing usizes, which are (probably?)
+        // 8 bytes. Let's make these explicitly u32s (u16 probably
+        // too small?) later.
+        let internal_ptr_size_bytes = 2;
+        // LRUD are pointers. Col, rowlabel and size are bounded
+        // by #cols+1, #rows and #rows respectively.
+        // For now just use the same pointer size.
+        let node_size_bytes = 7*internal_ptr_size_bytes;
+        // Notably does not depend on num rows
+        let node_arr_size = (1 + num_cols + num_ones)*node_size_bytes;
+        let solution_size_bound_bytes = internal_ptr_size_bytes
+            *num_rows;
+        // actually a col/row size bound, not a ptr bound
+        let stack_obj_size_bytes = internal_ptr_size_bytes;
+        let stack_size_bound_bytes = stack_obj_size_bytes*num_rows;
+        node_arr_size + solution_size_bound_bytes + stack_size_bound_bytes
+        // Let's ignore the empty rows for now.
+    }
+
     /// Creates a new exact cover solver from a problem specification.
     pub fn new(problem: &ExactCoverProblem) -> Self {
         let primary_cols = problem.primary_columns();
@@ -75,7 +112,8 @@ impl ExactCoverSolver {
             up: UNUSED, down: UNUSED,
             col: UNUSED, size: UNUSED, row_label: UNUSED,
         };
-        let mut nodes = vec![root];
+        let mut nodes = ArrayVec::new();
+        nodes.push(root);
 
         // The column headers live at indices 1 to
         // num_cols of the node list. Head nodes above num_primary_cols
@@ -98,7 +136,7 @@ impl ExactCoverSolver {
         // The last primary column's right wraps around to head.
         nodes[primary_cols].right = HEAD;
 
-        let mut empty_rows = vec![];
+        let mut empty_rows = ArrayVec::new();
         for (i, row) in ones.enumerate() {
             let mut first_of_row = None;
 
@@ -142,13 +180,17 @@ impl ExactCoverSolver {
             }
         }
 
+        // assert col sizes
+        // assert num nodes(?) num ints
+        assert!(num_cols <= MAX_COLS);
+
         Self {
             x: nodes,
             // think about this... extending as appropriate...
-            o: vec![0; num_cols],
+            o: [0; MAX_COLS],
             empty_rows,
             stack: {
-                let mut stack = Vec::with_capacity(num_cols);
+                let mut stack = ArrayVec::new();
                 stack.push(FinalState::Start);
                 stack
             },

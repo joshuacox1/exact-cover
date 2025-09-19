@@ -10,16 +10,24 @@ use exact_cover_solver::NQueens;
 
 fn main() {
     let n = 15;
-    let queens = NQueens::new(n).exact_cover_problem();
+    let queens = Box::new(NQueens::new(n).exact_cover_problem());
+    println!("Memoryreqs: {}",
+        ExactCoverSolver::memory_reqs(88, 225, 900));
+    println!("Memoryreqs!: {}",
+        ExactCoverSolver::memory_reqs(4096, 4096, 65536));
+    println!(
+        "rows: {}, cols: {} (pr: {} + sc: {}), ones: {}",
+        queens.rows(),
+        queens.columns(),
+        queens.primary_columns(),
+        queens.secondary_columns(),
+        queens.num_ones(),
+    );
 
     let mut solver = ExactCoverSolver::new(&queens);
+    let p = solver.iter_solutions().count();
 
-    // let mut w = vec![];
-    while let Some(s) = solver.next_solution() {
-        let q = solver.iter_steps().count();
-        let s = s.to_sorted();
-        println!("{q}: {s:?}");
-    }
+    println!("{p}");
 
     // for (q, s) in &w {
     // }

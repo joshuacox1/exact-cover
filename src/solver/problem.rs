@@ -84,6 +84,11 @@ impl ExactCoverProblem {
     pub fn secondary_columns(&self) -> usize {
         self.num_secondary_columns
     }
+
+    #[inline]
+    pub fn num_ones(&self) -> usize {
+        self.matrix.cols.len()
+    }
 }
 
 /// A sparse binary matrix type. Stored in compressed sparse row
