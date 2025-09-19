@@ -1,12 +1,27 @@
-// use arrayvec::ArrayVec;
 // use bumpalo::Bump;
-
+// use arrayvec::ArrayVec;
 // use itertools::Itertools;
 
 // use super::{
 //     output::PartialCover, ExactCover, Solutions, ExactCoverProblem,
 //     SolverSteps, SolverStep
 // };
+
+
+// // byte 0:
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // // TODO: change internal layout so we don't waste space
 // // for size and row label for non-columns.
@@ -53,16 +68,16 @@
 // /// iterator wrapper interfaces via `.iter_solutions()` and `.iter_steps()`.
 // #[derive(Debug)]
 // pub struct ExactCoverSolver {
-//     x: ArrayVec<Node, MAX_ONES>,
+//     x: Vec<Node>,
 //     // Set of row labels constituting the current solution.
-//     o: [usize; MAX_COLS],
+//     o: Vec<usize>,
 //     /// Empty rows. The default behaviour of Algorithm X / Dancing Links
 //     /// entirely ignores empty rows. For each every solution S we need
 //     /// to add 2^S solutions, one for each subset of empty rows.
 //     /// TODO: of course test this.
-//     empty_rows: ArrayVec<usize, MAX_ROWS>,
+//     empty_rows: Vec<usize>,
 //     // bounded by num columns
-//     stack: ArrayVec<FinalState, MAX_COLS>,
+//     stack: Vec<FinalState>,
 // }
 
 // // A generic value for unused values.
@@ -71,7 +86,7 @@
 
 // const MAX_COLS: usize = 4096;
 // const MAX_ROWS: usize = 4096;
-// const MAX_ONES: usize = 65536 - MAX_COLS - 1;
+// const MAX_ONES: usize = 65536 - MAX_COLS;
 
 
 // // Let's do some maths.
@@ -81,31 +96,6 @@
 
 // type ENTRY_IDX = u16;
 // type COL_OR_ROW_IDX = u16;
-
-// // bytes 0-4:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // impl ExactCoverSolver {
 //     pub fn memory_reqs(
@@ -147,8 +137,7 @@
 //             up: UNUSED, down: UNUSED,
 //             col: UNUSED, size: UNUSED, row_label: UNUSED,
 //         };
-//         let mut nodes = ArrayVec::new();
-//         nodes.push(root);
+//         let mut nodes = vec![root];
 
 //         // The column headers live at indices 1 to
 //         // num_cols of the node list. Head nodes above num_primary_cols
@@ -171,7 +160,7 @@
 //         // The last primary column's right wraps around to head.
 //         nodes[primary_cols].right = HEAD;
 
-//         let mut empty_rows = ArrayVec::new();
+//         let mut empty_rows = vec![];
 //         for (i, row) in ones.enumerate() {
 //             let mut first_of_row = None;
 
@@ -215,20 +204,15 @@
 //             }
 //         }
 
-//         // assert col sizes
-//         // assert num nodes(?) num ints
-//         assert!(num_cols <= MAX_COLS);
-
 //         Self {
 //             x: nodes,
-//             // think about this... extending as appropriate...
-//             o: [0; MAX_COLS],
+//             o: vec![0; num_cols],
 //             empty_rows,
 //             stack: {
-//                 let mut stack = ArrayVec::new();
-//                 stack.push(FinalState::Start);
-//                 stack
-//             },
+//                 let mut s = Vec::with_capacity(num_cols);
+//                 s.push(FinalState::Start);
+//                 s
+//             }
 //         }
 //     }
 

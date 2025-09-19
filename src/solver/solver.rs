@@ -81,31 +81,6 @@ const MAX_ONES: usize = 65536 - MAX_COLS;
 type ENTRY_IDX = u16;
 type COL_OR_ROW_IDX = u16;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 impl ExactCoverSolver {
     pub fn memory_reqs(
         num_cols: usize,
@@ -217,7 +192,11 @@ impl ExactCoverSolver {
             x: nodes,
             o: vec![0; num_cols],
             empty_rows,
-            stack: vec![FinalState::Start],
+            stack: {
+                let mut s = Vec::with_capacity(num_cols);
+                s.push(FinalState::Start);
+                s
+            }
         }
     }
 
