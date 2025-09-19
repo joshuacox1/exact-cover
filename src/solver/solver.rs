@@ -62,7 +62,7 @@ impl ExactCoverSolver {
     pub fn new(problem: &ExactCoverProblem) -> Self {
         let primary_cols = problem.primary_columns();
         let secondary_cols = problem.secondary_columns();
-        let ones = problem.matrix().ordered_points_rows();
+        let ones = problem.matrix.ordered_points_rows();
         let num_cols = primary_cols + secondary_cols;
 
         // The root node lives at index 0 of the node list.
@@ -141,7 +141,6 @@ impl ExactCoverSolver {
             }
         }
 
-        
         Self {
             x: nodes,
             // think about this... extending as appropriate...

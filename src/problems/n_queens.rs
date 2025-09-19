@@ -7,8 +7,6 @@ use crate::{
         ExactCover, ExactCoverSolver, ExactCoverProblem, PartialCover,
         ExactCoverRepresentable,
     },
-    sparse_binary_matrix::SparseBinaryMatrix,
-
 };
 
 /// Create a new representation of an n-queens problem.
@@ -45,12 +43,15 @@ impl ExactCoverRepresentable for NQueens {
                     [row_constraint, col_constraint, diag1_constraint, diag2_constraint].into_iter()
                 });
             // These are both infallible as constructed above.
-            let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
-            let problem = ExactCoverProblem::new_general(matrix, secondary_columns).unwrap();
+            // let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
+            let problem = ExactCoverProblem::new(
+                ones, num_cols, secondary_columns,
+            ).unwrap();
             problem
         } else {
-            let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
-            let problem = ExactCoverProblem::new_general(matrix, 0).unwrap();
+            // let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
+            let problem = ExactCoverProblem::new(
+                std::iter::empty::<std::iter::Empty<_>>(), 0, 0).unwrap();
             problem
         }
     }

@@ -2,8 +2,10 @@ use std::time::{Duration, Instant};
 use std::thread::sleep;
 use itertools::Itertools;
 
-use exact_cover_solver::solver::ExactCoverSolver;
-use exact_cover_solver::{problems::{ExactCoverRepresentable, NQueens}, solver::SolverStep};
+use exact_cover_solver::{
+    ExactCoverSolver, ExactCoverRepresentable, SolverStep
+};
+use exact_cover_solver::NQueens;
 
 
 fn main() {
@@ -14,7 +16,7 @@ fn main() {
 
     // let mut w = vec![];
     while let Some(s) = solver.next_solution() {
-        let q = solver.counter_steps();
+        let q = solver.iter_steps().count();
         let s = s.to_sorted();
         println!("{q}: {s:?}");
     }

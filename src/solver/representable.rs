@@ -9,11 +9,11 @@ pub trait ExactCoverRepresentable {
     /// A type representing the problem's solution.
     type TSolution;
 
-    ///A type representing a partial solution to the problem.
-    ///Often this will be the same type as `TSolution`, but not
-    ///always. For example, a partial solution to a Sudoku problem
-    ///may have grid cell type `Option<u8>`, whereas a full solution
-    ///may have grid cell type `u8`.
+    /// A type representing a partial solution to the problem.
+    /// Often this will be the same type as `TSolution`, but not
+    /// always. For example, a partial solution to a Sudoku problem
+    /// may have grid cell type `Option<u8>`, whereas a full solution
+    /// may have grid cell type `u8`.
     ///
     /// If a partial solution has no meaningful representation or
     /// is not relevant for the application in question, set
@@ -28,5 +28,7 @@ pub trait ExactCoverRepresentable {
 
     /// Converts a partial cover into a domain-specific partial
     /// solution.
-    fn from_partial_cover(&self, s: &PartialCover) -> Self::TPartialSolution;
+    fn from_partial_cover(
+        &self, s: &PartialCover,
+    ) -> Self::TPartialSolution;
 }

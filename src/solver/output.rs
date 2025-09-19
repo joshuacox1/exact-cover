@@ -1,5 +1,6 @@
 /// A solution of the solver. i.e. a list of unique row indices which form an
 /// exact cover of the problem.
+/// TODO: fix
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExactCover(
     /// The inner solution.
