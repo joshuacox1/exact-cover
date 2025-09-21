@@ -5,5 +5,5 @@ edition = "2024"
 
 [dependencies]
 arrayvec = "0.7.6"
-bumpalo = "3.19.0"
+bumpalo = { version = "3.19.0", features = ["collections"] }
 itertools = "0.14.0"

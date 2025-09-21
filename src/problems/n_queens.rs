@@ -57,7 +57,7 @@ impl ExactCoverRepresentable for NQueens {
     }
 
     fn from_exact_cover(&self, solution: &ExactCover) -> Self::TSolution {
-        self.from_vec(&solution.0)
+        self.from_vec(solution.val())
     }
 
     fn from_partial_cover(&self, solution: &PartialCover) -> Self::TPartialSolution {
@@ -106,13 +106,14 @@ impl NQueens {
         solutions
     }
 
-    fn doeverything() {
-        let problem = NQueens::new(8);
-        let mut solver = ExactCoverSolver::new(&problem.exact_cover_problem());
-        let solutions = solver.iter_solutions()
-            .map(|s| problem.from_exact_cover(&s))
-            .collect::<Vec<_>>();
-    }
+    // fn doeverything() {
+    //     let problem = NQueens::new(8);
+    //     let mut solver = ExactCoverSolver::new(&problem.exact_cover_problem());
+    //     let solutions = vec![];
+    //     while let Some(soln) = solver.next_solution() {
+    //         solutions.insert(problem.from_exact_cover(soln));
+    //     }
+    // }
 }
 
 fn valid_queens<'a>(queens: impl Iterator<Item = &'a BoardSquare>, n: usize) -> bool {
