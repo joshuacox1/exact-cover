@@ -18,6 +18,8 @@ impl Board {
 
         Self { z }
     }
+
+    pub fn to_exact_cover
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -188,10 +190,95 @@ fn rot_refl(
 
 fn transform(
     data: &[(Coord, Colour)],
-) -> Option<ArrayVec<(Coord, Colour), 8> {
+) -> Option<ArrayVec<(Coord, Colour), 8>> {
 
 }
 
+
+
+// There are 8*(8-1)*2 = 112 internal edges on an 8x8 square board.
+// Use the low 112 bits of a u128 to encode this. A solution
+// is then just an edge mask (visually at least).
+// In this form the copies of two-black solutions are
+// indistinguishable. May want to filter those out.
+type EdgeMask = u128;
+
+// Precalculated edge matrix.
+const EDGE_MASKS: [EdgeMask; 64] = [
+
+];
+
+fn precalculate_edge_masks(coord: Coord) {
+    let mut edge_masks = [0u128; 64];
+
+    for j in 0..8 {
+        for i in 0..8 {
+            let idx = i + 8*j;
+            // compute the edge mask
+        }
+    }
+}
+
+
+fn get_soln(z: impl Iterator<Item = &[Coord]>) -> EdgeMask {
+    let mut soln = 0u128;
+
+    // The edge boundary of a single piece is the set of edges
+    // bordered by exactly one square coord within the piece.
+    // (Bordered by two = internal edge, by zero = not adjacent).
+    // So XORing individual edge masks obtains the piece boundary.
+    // We can then OR the piece boundary masks together to
+    // obtain the final solution mask.
+    for piececoords in z {
+        let piecemask = 0u128;
+        for Coord(i,j) in piececoords {
+            piecemask ^= EDGE_MASKS[i + 8*j];
+        }
+        soln |= piecemask;
+    }
+
+    soln
+}
+
+// Large buffer with indices into it a bit like the above.
+// for each piece, an index into the buffer, we have piece lengths
+// stored already so we just need a number for the amount of distinct
+// placements. and then there will be (Coord, Colour) pairs for each.
+const ALL_PIECE_ROTATION_DATA: [(Coord, Colour); 4204] = [];
+// First item: the index. Second item: number of placements
+// (so the buffer is piece length * num placements)
+const ALL_PIECE_ROTATION_DATA_INDICES: [(usize, usize); NUM_PIECES] = [];
+
+// Exact cover problem
+
+fn exactcover(board: Board) -> ExactCoverProblem {
+    // 82 columns: put the 18 pieces first, then the 64 squares.
+    let mut cover = vec![];
+
+    // One row per unique valid placement of a piece provided it satisfies
+    // the board
+    for (p_i,(idx,bufl)) in ALL_PIECE_ROTATION_DATA_INDICES.iter().enumerate() {
+        let piece_length = PIECE_INDICES[p_i].1;
+        for i in 0..bufl {
+            let q = idx + piece_length*i;
+            // Relevant of (coord, colour) data for this piece.
+            let rel_data = &ALL_PIECE_ROTATION_DATA[q..q+piece_length];
+
+            // Check all match the board
+            if rel_data.map(|(c, cl)| board[c] == cl).all() {
+                let mut ec_row = Vec::with_capacity(1+piece_length);
+                ec_row.push(p_i);
+                for (Coord(i,j), _) in rel_data.iter() {
+                    ec_row.push(NUM_PIECES + i + 8*j);
+                }
+                cover.push(ec_row);
+            }
+        }
+    }
+
+    // Construct the cover object. There are no secondary columns
+    cover
+}
 
 
 // const ROTATIONS = [
