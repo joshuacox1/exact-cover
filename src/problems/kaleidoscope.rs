@@ -1,31 +1,19 @@
+use std::collections::HashSet;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Colour = { Black, Red, Blue, Yellow }
-
-// Each colour consists of 2 bits, so a board has 2*64 = 128 bits
-// which is 16 bytes. We can put this in a u128 perhaps?
-pub struct Board(u128);
-
-impl Board {
-    pub fn from(arr: [[Colour; 8]; 8]) -> Self {
-        let z = 0u128;
-        for (j, row) in arr.iter().enumerate() {
-            for (i, c) in row.iter().enumerate() {
-                let idx = 8*j + i;
-                z |= (c as u8) << (2*idx);
-            }
-        }
-
-        Self { z }
-    }
-
-    pub fn to_exact_cover
-}
+pub enum Colour { Black, Red, Blue, Yellow }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Coord(i8, i8);
 
-pub const NUM_PIECES = 18;
+impl Coord {
+    fn valid(&self) -> bool {
+        let Coord(x,y) = *self;
+        0 <= x && x < 8 && 0 <= y && y < 8
+    }
+}
+
+pub const NUM_PIECES: usize = 18;
 
 // First index = data idx, second index = length (size)
 const PIECE_INDICES: [(usize, usize); NUM_PIECES] = [
@@ -33,7 +21,7 @@ const PIECE_INDICES: [(usize, usize); NUM_PIECES] = [
     (2,1), // Black dot
     (4,2), // Domino
     (8,3), // Red 3-line
-    (14,3) // Black 3-line
+    (14,3), // Black 3-line
     (20,3), // Red 3-corner
     (26,3), // Black 3-corner
     (32,4), // Ls in some order...
@@ -54,133 +42,159 @@ const B: Colour = Colour::Black;
 const R: Colour = Colour::Red;
 const L: Colour = Colour::Blue;
 const Y: Colour = Colour::Yellow;
-type C = Coord;
 
 const SQUARE_DATA: [(Coord, Colour); 128] = [
     // Idx 0, length 1: Red dot front
-    (C(0,0), R),
+    (Coord(0,0), R),
     // Idx 1, length 1: red dot back
-    (C(0,0), B),
+    (Coord(0,0), B),
     // Idx 2, length 1: black dot back
-    (C(0,0), B),
+    (Coord(0,0), B),
     // Idx 3, length 1: black dot back
-    (C(0,0), L),
+    (Coord(0,0), L),
 
     // Idx 4, length 2: domino front
-    (C(0,0), R), (C(1,0), B),
+    (Coord(0,0), R), (Coord(1,0), B),
     // Idx 6, length 2: domino back
-    (C(0,0), B), (C(1,0), L),
+    (Coord(0,0), B), (Coord(1,0), L),
 
     // Idx 8, length 3: red three-line front
-    (C(0,0), R), (C(1,0), B), (C(2,0), R),
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(2,0), R),
     // Idx 11, length 3: red three-line back
-    (C(0,0), L), (C(1,0), B), (C(2,0), Y),
+    (Coord(0,0), L), (Coord(1,0), B), (Coord(2,0), Y),
     // Idx 14, length 3: black three-line front
-    (C(0,0), B), (C(1,0), R), (C(2,0), B),
+    (Coord(0,0), B), (Coord(1,0), R), (Coord(2,0), B),
     // Idx 17, length 3: black three-line back
-    (C(0,0), B), (C(1,0), Y), (C(2,0), B),
+    (Coord(0,0), B), (Coord(1,0), Y), (Coord(2,0), B),
 
     // Idx 20, length 3: red three-corner front
-    (C(0,0), R), (C(1,0), B), (C(1,1), R),
-    // Idx 23, length 3: red three-corner back TODO CHECK
-    (C(0,0), L), (C(1,0), B), (C(1,1), Y),
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(1,1), R),
+    // Idx 23, length 3: red three-corner back
+    (Coord(0,0), L), (Coord(1,0), B), (Coord(1,1), Y),
     // Idx 26, length 3: black three-corner front
-    (C(0,0), B), (C(1,0), R), (C(1,1), B),
+    (Coord(0,0), B), (Coord(1,0), R), (Coord(1,1), B),
     // Idx 29, length 3: black three-corner back
-    (C(0,0), B), (C(1,0), Y), (C(1,1), B),
+    (Coord(0,0), B), (Coord(1,0), Y), (Coord(1,1), B),
 
-    // Ls 32 + 4*2*4=32 (4 pieces, two sides each, 4 squares each)
+    // Idx 32, length 4: L, two reds on the long side, front
+    (Coord(0,0), B), (Coord(1,0), R), (Coord(1,1), B), (Coord(1,2), R),
+    // Idx 36, length 4: L, two reds on the long side, back
+    (Coord(0,0), Y), (Coord(1,0), B), (Coord(2,0), L), (Coord(2,1), B),
 
-    // Ss 64 + 16
+    // Idx 40, length 4: L, two blacks on the long side, front
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(1,1), R), (Coord(1,2), B),
+    // Idx 44, length 4: L, two blacks on the long side, back
+    (Coord(0,0), L), (Coord(1,0), B), (Coord(2,0), Y), (Coord(2,1), B),
 
-    // Ts 80 + 16
+    // Idx 48, length 4: J, two reds on the long side, front
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(2,0), R), (Coord(2,1), B),
+    // Idx 52, length 4: J, two reds on the long side, back
+    (Coord(0,0), L), (Coord(1,0), B), (Coord(1,1), Y), (Coord(1,2), B),
 
-    // The O 96 + 8
+    // Idx 56, length 4: J, two blacks on the long side, front
+    (Coord(0,0), B), (Coord(1,0), R), (Coord(2,0), B), (Coord(2,1), R),
+    // Idx 60, length 4: J, two blacks on the long side, back
+    (Coord(0,0), Y), (Coord(1,0), B), (Coord(1,1), L), (Coord(1,2), B),
 
-    // The L 104 + 8
+    // Idx 64, length 4: S front
+    (Coord(0,0), R), (Coord(0,1), B), (Coord(1,1), R), (Coord(1,2), B),
+    // Idx 68, length 4: S back
+    (Coord(0,0), Y), (Coord(1,0), B), (Coord(1,1), L), (Coord(2,1), B),
 
-    // The big stick 112 + 16 = 128
+    // Idx 72, length 4: Z front
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(1,1), R), (Coord(2,1), B),
+    // Idx 76, length 4: Z back
+    (Coord(0,0), L), (Coord(0,1), B), (Coord(1,1), Y), (Coord(1,2), B),
+
+    // Idx 80, length 4: Red T, front
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(2,0), R), (Coord(1,1), R),
+    // Idx 84, length 4: Red T, back
+    (Coord(0,0), B), (Coord(1,0), L), (Coord(2,0), B), (Coord(1,1), B),
+
+    // Idx 88, length 4: Black T, front
+    (Coord(0,0), B), (Coord(1,0), R), (Coord(2,0), B), (Coord(1,1), B),
+    // Idx 92, length 4: Black T, back
+    (Coord(0,0), Y), (Coord(1,0), B), (Coord(2,0), L), (Coord(1,1), Y),
+
+    // Idx 96, length 4: Box front
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(1,1), R), (Coord(0,1), B),
+    // Idx 100, length 4: Box back
+    (Coord(0,0), L), (Coord(1,0), B), (Coord(1,1), Y), (Coord(0,1), B),
+
+    // Idx 104, length 4: 4-line front
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(2,0), R), (Coord(3,0), B),
+    // Idx 108, length 4: 4-line back
+    (Coord(0,0), L), (Coord(1,0), B), (Coord(2,0), Y), (Coord(3,0), B),
+
+    // Idx 112, length 8: 8-line front
+    (Coord(0,0), R), (Coord(1,0), B), (Coord(2,0), R), (Coord(3,0), B),
+    (Coord(4,0), R), (Coord(5,0), B), (Coord(6,0), R), (Coord(7,0), B),
+    // Idx 120, length 8: 8-line back
+    (Coord(0,0), L), (Coord(1,0), B), (Coord(2,0), Y), (Coord(3,0), B),
+    (Coord(4,0), L), (Coord(5,0), B), (Coord(6,0), Y), (Coord(7,0), B),
 ];
 
-//     ["L8", [
-//         [[[0,0],"B"], [[1,0],"R"], [[2,0],"B"], [[3,0], "R"], [[4,0],"B"], [[5,0],"R"], [[6,0],"B"], [[7,0], "R"]],
-//         [[[0,0],"B"], [[1,0],"Y"], [[2,0],"B"], [[3,0], "L"], [[4,0],"B"], [[5,0],"Y"], [[6,0],"B"], [[7,0], "L"]],
-//     ].sort()],
 
+// Each colour consists of 2 bits, so a board has 2*64 = 128 bits
+// which is 16 bytes. We can put this in a u128 perhaps?
+pub struct Board([[Colour; 8]; 8]);
 
+impl Board {
+    // pub fn from(arr: [[Colour; 8]; 8]) -> Self {
+    //     let z = 0u128;
+    //     for (j, row) in arr.iter().enumerate() {
+    //         for (i, c) in row.iter().enumerate() {
+    //             let idx = 8*j + i;
+    //             z |= (c as u8) << (2*idx);
+    //         }
+    //     }
 
-//     ["L4BS", [
-//         [[[2,0],"R"], [[1,0],"B"], [[0,0],"R"], [[0,1], "B"]],
-//         [[[2,1],"B"], [[2,0],"L"], [[1,0],"B"], [[0,0], "Y"]],
-//     ].sort()],
-//     ["L4RS", [
-//         [[[2,0],"B"], [[1,0],"R"], [[0,0],"B"], [[0,1], "R"]],
-//         [[[2,1],"B"], [[2,0],"Y"], [[1,0],"B"], [[0,0], "L"]],
-//     ].sort()],
-//     ["G4BS", [
-//         [[[2,1],"B"], [[2,0],"R"], [[1,0],"B"], [[0,0], "R"]],
-//         [[[2,0],"B"], [[1,0],"Y"], [[0,0],"B"], [[0,1], "L"]],
-//     ].sort()],
-//     ["G4RS", [
-//         [[[2,1],"R"], [[2,0],"B"], [[1,0],"R"], [[0,0], "B"]],
-//         [[[2,0],"B"], [[1,0],"L"], [[0,0],"B"], [[0,1], "Y"]],
-//     ].sort()],
-//     ["S4", [
-//         [[[0,0],"R"], [[0,1],"B"], [[1,1],"R"], [[1,2], "B"]],
-//         [[[0,0],"Y"], [[1,0],"B"], [[1,1],"L"], [[2,1], "B"]],
-//     ].sort()],
-//     ["Z4", [
-//         [[[0,0],"R"], [[1,0],"B"], [[1,1],"R"], [[2,1], "B"]],
-//         [[[0,0],"L"], [[0,1],"B"], [[1,1],"Y"], [[1,2], "B"]],
-//     ].sort()],
-//     ["T4R", [
-//         [[[0,0],"R"], [[1,0],"B"], [[2,0],"R"], [[1,1], "R"]],
-//         [[[0,0],"B"], [[1,0],"L"], [[2,0],"B"], [[1,1], "B"]],
-//     ].sort()],
-//     ["T4B", [
-//         [[[0,0],"B"], [[1,0],"R"], [[2,0],"B"], [[1,1], "B"]],
-//         [[[0,0],"Y"], [[1,0],"B"], [[2,0],"L"], [[1,1], "Y"]],
-//     ].sort()],
-//     ["O4", [
-//         [[[0,0],"B"], [[1,0],"R"], [[0,1],"R"], [[1,1], "B"]],
-//         [[[0,0],"B"], [[1,0],"L"], [[0,1],"Y"], [[1,1], "B"]],
-//     ].sort()],
-//     ["L4", [
-//         [[[0,0],"B"], [[1,0],"R"], [[2,0],"B"], [[3,0], "R"]],
-//         [[[0,0],"B"], [[1,0],"Y"], [[2,0],"B"], [[3,0], "L"]],
-//     ].sort()],
-// ]);
+    //     Self { z }
+    // }
 
+    // pub fn to_exact_cover
+}
 
-fn generate_piece_rotations(board: Board) {
-    for (data_idx, data_len) in piece_indices {
+pub fn generate_piece_rotations(
+    board: &Board,
+) -> Vec<Vec<Vec<(Coord, Colour)>>> {
+    let mut all = vec![];
+
+    for (i, &(data_idx, data_len)) in PIECE_INDICES.iter().enumerate() {
         let mut set = HashSet::new();
         // red and black side is at
         let idx1 = data_idx;
         let idx2 = idx1+data_len;
         let idx3 = idx2+data_len;
         let front_data = &SQUARE_DATA[idx1..idx2];
-        let back_data = &SQUARE_DATA[idx2..idx3];
         rot_refl(front_data, &mut set);
+        let back_data = &SQUARE_DATA[idx2..idx3];
         rot_refl(back_data, &mut set);
+
+        all.push(set.into_iter().collect::<Vec<_>>());
     }
+
+    all
 }
 
-fn rot1(c: Coord) -> Coord { let C(x,y) = c; C(x,y) }
-fn rot2(c: Coord) -> Coord { let C(x,y) = c; C(-y,x) }
-fn rot3(c: Coord) -> Coord { let C(x,y) = c; C(-x,-y) }
-fn rot4(c: Coord) -> Coord { let C(x,y) = c; C(y,-x) }
+fn rot1(c: Coord) -> Coord { let Coord(x,y) = c; Coord(x,y) }
+fn rot2(c: Coord) -> Coord { let Coord(x,y) = c; Coord(-y,x) }
+fn rot3(c: Coord) -> Coord { let Coord(x,y) = c; Coord(-x,-y) }
+fn rot4(c: Coord) -> Coord { let Coord(x,y) = c; Coord(y,-x) }
 
 const ROTATIONS: [fn(Coord) -> Coord; 4] = [rot1, rot2, rot3, rot4];
 
 fn rot_refl(
     data: &[(Coord, Colour)],
-    set: &mut HashSet<ArrayVec<(Coord, Colour), 8>>,
+    set: &mut HashSet<Vec<(Coord, Colour)>>,
 ) {
-    for j in -8..=8 {
-        for i in -8..=8 {
+    // Likely way wider bounds than needed, but just in case.
+    // This preprocessing step does not need to be optimised
+    // (in fact the results could be embedded in at compile time).
+    for j in -16..=16 {
+        for i in -16..=16 {
             for rot in ROTATIONS {
-                if let Some(pos) = transform(data) {
+                if let Some(pos) = transform(data, i, j, rot) {
                     set.insert(pos);
                 }
             }
@@ -190,95 +204,108 @@ fn rot_refl(
 
 fn transform(
     data: &[(Coord, Colour)],
-) -> Option<ArrayVec<(Coord, Colour), 8>> {
-
-}
-
-
-
-// There are 8*(8-1)*2 = 112 internal edges on an 8x8 square board.
-// Use the low 112 bits of a u128 to encode this. A solution
-// is then just an edge mask (visually at least).
-// In this form the copies of two-black solutions are
-// indistinguishable. May want to filter those out.
-type EdgeMask = u128;
-
-// Precalculated edge matrix.
-const EDGE_MASKS: [EdgeMask; 64] = [
-
-];
-
-fn precalculate_edge_masks(coord: Coord) {
-    let mut edge_masks = [0u128; 64];
-
-    for j in 0..8 {
-        for i in 0..8 {
-            let idx = i + 8*j;
-            // compute the edge mask
-        }
-    }
-}
-
-
-fn get_soln(z: impl Iterator<Item = &[Coord]>) -> EdgeMask {
-    let mut soln = 0u128;
-
-    // The edge boundary of a single piece is the set of edges
-    // bordered by exactly one square coord within the piece.
-    // (Bordered by two = internal edge, by zero = not adjacent).
-    // So XORing individual edge masks obtains the piece boundary.
-    // We can then OR the piece boundary masks together to
-    // obtain the final solution mask.
-    for piececoords in z {
-        let piecemask = 0u128;
-        for Coord(i,j) in piececoords {
-            piecemask ^= EDGE_MASKS[i + 8*j];
-        }
-        soln |= piecemask;
-    }
-
-    soln
-}
-
-// Large buffer with indices into it a bit like the above.
-// for each piece, an index into the buffer, we have piece lengths
-// stored already so we just need a number for the amount of distinct
-// placements. and then there will be (Coord, Colour) pairs for each.
-const ALL_PIECE_ROTATION_DATA: [(Coord, Colour); 4204] = [];
-// First item: the index. Second item: number of placements
-// (so the buffer is piece length * num placements)
-const ALL_PIECE_ROTATION_DATA_INDICES: [(usize, usize); NUM_PIECES] = [];
-
-// Exact cover problem
-
-fn exactcover(board: Board) -> ExactCoverProblem {
-    // 82 columns: put the 18 pieces first, then the 64 squares.
-    let mut cover = vec![];
-
-    // One row per unique valid placement of a piece provided it satisfies
-    // the board
-    for (p_i,(idx,bufl)) in ALL_PIECE_ROTATION_DATA_INDICES.iter().enumerate() {
-        let piece_length = PIECE_INDICES[p_i].1;
-        for i in 0..bufl {
-            let q = idx + piece_length*i;
-            // Relevant of (coord, colour) data for this piece.
-            let rel_data = &ALL_PIECE_ROTATION_DATA[q..q+piece_length];
-
-            // Check all match the board
-            if rel_data.map(|(c, cl)| board[c] == cl).all() {
-                let mut ec_row = Vec::with_capacity(1+piece_length);
-                ec_row.push(p_i);
-                for (Coord(i,j), _) in rel_data.iter() {
-                    ec_row.push(NUM_PIECES + i + 8*j);
-                }
-                cover.push(ec_row);
-            }
+    i: i8,
+    j: i8,
+    rot: fn(Coord) -> Coord,
+) -> Option<Vec<(Coord, Colour)>> {
+    let mut new = Vec::with_capacity(data.len());
+    for (Coord(x,y), colour) in data {
+        let new_coord = rot(Coord(x+i,y+j));
+        if new_coord.valid() {
+            new.push((new_coord, *colour));
+        } else {
+            return None;
         }
     }
 
-    // Construct the cover object. There are no secondary columns
-    cover
+    Some(new)
 }
+
+
+
+// // There are 8*(8-1)*2 = 112 internal edges on an 8x8 square board.
+// // Use the low 112 bits of a u128 to encode this. A solution
+// // is then just an edge mask (visually at least).
+// // In this form the copies of two-black solutions are
+// // indistinguishable. May want to filter those out.
+// type EdgeMask = u128;
+
+// // Precalculated edge matrix.
+// const EDGE_MASKS: [EdgeMask; 64] = [
+
+// ];
+
+// fn precalculate_edge_masks(coord: Coord) {
+//     let mut edge_masks = [0u128; 64];
+
+//     for j in 0..8 {
+//         for i in 0..8 {
+//             let idx = i + 8*j;
+//             // compute the edge mask
+//         }
+//     }
+// }
+
+
+// fn get_soln(z: impl Iterator<Item = &[Coord]>) -> EdgeMask {
+//     let mut soln = 0u128;
+
+//     // The edge boundary of a single piece is the set of edges
+//     // bordered by exactly one square coord within the piece.
+//     // (Bordered by two = internal edge, by zero = not adjacent).
+//     // So XORing individual edge masks obtains the piece boundary.
+//     // We can then OR the piece boundary masks together to
+//     // obtain the final solution mask.
+//     for piececoords in z {
+//         let piecemask = 0u128;
+//         for Coord(i,j) in piececoords {
+//             piecemask ^= EDGE_MASKS[i + 8*j];
+//         }
+//         soln |= piecemask;
+//     }
+
+//     soln
+// }
+
+// // Large buffer with indices into it a bit like the above.
+// // for each piece, an index into the buffer, we have piece lengths
+// // stored already so we just need a number for the amount of distinct
+// // placements. and then there will be (Coord, Colour) pairs for each.
+// const ALL_PIECE_ROTATION_DATA: [(Coord, Colour); 4204] = [];
+// // First item: the index. Second item: number of placements
+// // (so the buffer is piece length * num placements)
+// const ALL_PIECE_ROTATION_DATA_INDICES: [(usize, usize); NUM_PIECES] = [];
+
+// // Exact cover problem
+
+// fn exactcover(board: Board) -> ExactCoverProblem {
+//     // 82 columns: put the 18 pieces first, then the 64 squares.
+//     let mut cover = vec![];
+
+//     // One row per unique valid placement of a piece provided it satisfies
+//     // the board
+//     for (p_i,(idx,bufl)) in ALL_PIECE_ROTATION_DATA_INDICES.iter().enumerate() {
+//         let piece_length = PIECE_INDICES[p_i].1;
+//         for i in 0..bufl {
+//             let q = idx + piece_length*i;
+//             // Relevant of (coord, colour) data for this piece.
+//             let rel_data = &ALL_PIECE_ROTATION_DATA[q..q+piece_length];
+
+//             // Check all match the board
+//             if rel_data.map(|(c, cl)| board[c] == cl).all() {
+//                 let mut ec_row = Vec::with_capacity(1+piece_length);
+//                 ec_row.push(p_i);
+//                 for (Coord(i,j), _) in rel_data.iter() {
+//                     ec_row.push(NUM_PIECES + i + 8*j);
+//                 }
+//                 cover.push(ec_row);
+//             }
+//         }
+//     }
+
+//     // Construct the cover object. There are no secondary columns
+//     cover
+// }
 
 
 // const ROTATIONS = [

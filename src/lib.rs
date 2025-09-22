@@ -9,4 +9,4 @@ pub use solver::{
     ExactCoverRepresentable,
 };
 
-pub use problems::NQueens;
+pub use problems::{NQueens, kaleidoscope};
