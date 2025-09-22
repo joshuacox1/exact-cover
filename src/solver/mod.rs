@@ -11,7 +11,7 @@ mod tests;
 
 pub use problem::{ExactCoverProblem, ExactCoverProblemError,
 SparseBinaryMatrix};
-//pub use iterators::{Solutions, SolverSteps};
+pub use iterators::{Solutions, SolverSteps};
 pub use output::{ExactCover, PartialCover, SolverStep};
 pub use solver::ExactCoverSolver;
 pub use representable::ExactCoverRepresentable;
