@@ -57,7 +57,7 @@ impl ExactCoverRepresentable for NQueens {
     }
 
     fn from_exact_cover(&self, solution: &ExactCover) -> Self::TSolution {
-        self.from_vec(solution.val())
+        self.from_vec(&solution.0)
     }
 
     fn from_partial_cover(&self, solution: &PartialCover) -> Self::TPartialSolution {

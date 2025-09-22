@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use super::{
     output::PartialCover, ExactCover, ExactCoverProblem,
-    /*Solutions, SolverSteps,*/ SolverStep
+    Solutions, SolverSteps, SolverStep
 };
 
 // TODO: change internal layout so we don't waste space
@@ -203,14 +203,14 @@ impl ExactCoverSolver {
         }
     }
 
-    fn map_solution(&mut self, k: usize) -> &[usize] {
-        for i in 0..k {
-            let node = self.o[i];
-            let row = self.x[node].row_label;
-            self.o_rows[i] = row;
-        }
-        &self.o_rows[..k]
-    }
+    // fn map_solution(&mut self, k: usize) -> &[usize] {
+    //     for i in 0..k {
+    //         let node = self.o[i];
+    //         let row = self.x[node].row_label;
+    //         self.o_rows[i] = row;
+    //     }
+    //     &self.o_rows[..k]
+    // }
 
     /// The current partial solution, i.e. the solver's current row stack.
     pub fn current_partial_solution(&self) -> PartialCover {
@@ -238,13 +238,16 @@ impl ExactCoverSolver {
     }
 
     /// Return the next solver step if there are any remaining to take.
-    pub fn next_step<'b: 'a, 'a>(&'b mut self) -> Option<SolverStep<'a>> {
+    pub fn next_step(&mut self) -> Option<SolverStep> {
         while let Some(st) = self.stack.pop() {
             let k = self.stack.len();
             match st {
                 FinalState::Start => {
                     if self.x[HEAD].right == HEAD {
-                        let solution = ExactCover(self.map_solution(k));
+                        let solution = ExactCover(self.o.iter()
+                            .take(k)
+                            .map(|&r| self.x[r].row_label)
+                            .collect::<Vec<_>>());
                         return Some(
                             SolverStep::ReportSolution(solution)
                         );
@@ -340,14 +343,14 @@ impl ExactCoverSolver {
     }
 
     /// Returns an iterator through remaining solutions.
-    // pub fn iter_solutions(&mut self) -> Solutions {
-    //     Solutions { solver: self }
-    // }
+    pub fn iter_solutions(&mut self) -> Solutions {
+        Solutions { solver: self }
+    }
 
     // /// Returns an iterator through remaining solver steps.
-    // pub fn iter_steps(&mut self) -> SolverSteps {
-    //     SolverSteps { solver: self }
-    // }
+    pub fn iter_steps(&mut self) -> SolverSteps {
+        SolverSteps { solver: self }
+    }
 
     // Returns index of the col node NOT THE COLUMN.
     // and the smallest size.
