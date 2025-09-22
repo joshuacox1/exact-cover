@@ -1,4 +1,12 @@
 
-pub mod sparse_binary_matrix;
-pub mod solver;
-pub mod problems;
+mod solver;
+mod problems;
+
+pub use solver::{
+    ExactCoverSolver, ExactCoverProblem,
+    ExactCover, PartialCover, SolverStep,
+    // Solutions, SolverSteps,
+    ExactCoverRepresentable,
+};
+
+pub use problems::NQueens;

@@ -1,13 +1,22 @@
+// use bumpalo::{Bump};
+use arrayvec::ArrayVec;
 use itertools::Itertools;
 
-use crate::problems::ExactCoverRepresentable;
-
 use super::{
-    output::PartialCover, ExactCover, ExactCoverSolutionIter, ExactCoverProblem, ExactCoverStepIter, SolverStep
+    output::PartialCover, ExactCover, ExactCoverProblem,
+    /*Solutions, SolverSteps,*/ SolverStep
 };
 
-// TODO: at some point remove size and row_label
-// for non-columns? It's a waste of space for most of the nodes.
+// TODO: change internal layout so we don't waste space
+// for size and row label for non-columns.
+// TODO: remove all allocations?
+// - The root node only uses left and right.
+// - Column nodes use LRUD, col points to themselves so unnecessary,
+// no row-label.
+// - Ordinary nodes use LRUD col row_label. No size.
+// The size of this entire structure is something like
+// 1 + numcolumns + numones + the stack + #emptyrows (bounded by rows?)
+// + the current working solution
 #[derive(Debug)]
 struct Node {
     left: usize,
@@ -30,11 +39,11 @@ enum FinalState {
 }
 
 /// An exact cover solver.
-/// 
+///
 /// An `ExactCoverSolver` must be initialised with an exact cover problem.
 /// It then holds internal state from which it is able to produce
 /// all solutions.
-/// 
+///
 /// The `ExactCoverSolver` exposes two notions of "next": `.next_solution()`
 /// and `.next_step()`. `.next_solution()` runs the solver forward until the
 /// next solution is found, if one exists; `.next_step()` runs the solver
@@ -44,16 +53,16 @@ enum FinalState {
 #[derive(Debug)]
 pub struct ExactCoverSolver {
     x: Vec<Node>,
-    // Set of row labels. Think about this a bit more...
+    // Set of node items constituting the current solution.
     o: Vec<usize>,
+    // Buffer into which to map row indices of the above for reporting.
+    o_rows: Vec<usize>,
     /// Empty rows. The default behaviour of Algorithm X / Dancing Links
     /// entirely ignores empty rows. For each every solution S we need
     /// to add 2^S solutions, one for each subset of empty rows.
     /// TODO: of course test this.
     empty_rows: Vec<usize>,
-
-    counter_solutions: u64,
-    counter_steps: u64,
+    // bounded by num columns
     stack: Vec<FinalState>,
 }
 
@@ -61,16 +70,48 @@ pub struct ExactCoverSolver {
 const UNUSED: usize = usize::MAX;
 const HEAD: usize = 0;
 
+const MAX_COLS: usize = 4096;
+const MAX_ROWS: usize = 4096;
+const MAX_ONES: usize = 65536 - MAX_COLS;
+
+
+// Let's do some maths.
+// Currently we'll ignore the empty_rows set.
+// We have three constants: MAX_COLS, MAX_ROWS, and MAX_ONES.
+// (we ensure that MAX_ONES >= MAX_ROWS and MAX_ONES >= MAX_COLS)
+
+type ENTRY_IDX = u16;
+type COL_OR_ROW_IDX = u16;
+
 impl ExactCoverSolver {
-    pub fn new_from_p(problem: &impl ExactCoverRepresentable) -> Self {
-        Self::new(&problem.exact_cover_problem())
+    pub fn memory_reqs(
+        num_cols: usize,
+        num_rows: usize,
+        num_ones: usize) -> usize {
+        // Since we are currently uing usizes, which are (probably?)
+        // 8 bytes. Let's make these explicitly u32s (u16 probably
+        // too small?) later.
+        let internal_ptr_size_bytes = 2;
+        // LRUD are pointers. Col, rowlabel and size are bounded
+        // by #cols+1, #rows and #rows respectively.
+        // For now just use the same pointer size.
+        let node_size_bytes = 7*internal_ptr_size_bytes;
+        // Notably does not depend on num rows
+        let node_arr_size = (1 + num_cols + num_ones)*node_size_bytes;
+        let solution_size_bound_bytes = internal_ptr_size_bytes
+            *num_rows;
+        // actually a col/row size bound, not a ptr bound
+        let stack_obj_size_bytes = internal_ptr_size_bytes;
+        let stack_size_bound_bytes = stack_obj_size_bytes*num_rows;
+        node_arr_size + solution_size_bound_bytes + stack_size_bound_bytes
+        // Let's ignore the empty rows for now.
     }
 
     /// Creates a new exact cover solver from a problem specification.
     pub fn new(problem: &ExactCoverProblem) -> Self {
         let primary_cols = problem.primary_columns();
         let secondary_cols = problem.secondary_columns();
-        let ones = problem.matrix().ordered_points_rows();
+        let ones = problem.matrix.ordered_points_rows();
         let num_cols = primary_cols + secondary_cols;
 
         // The root node lives at index 0 of the node list.
@@ -149,22 +190,27 @@ impl ExactCoverSolver {
             }
         }
 
-        
         Self {
             x: nodes,
-            // think about this... extending as appropriate...
             o: vec![0; num_cols],
+            o_rows: vec![0; num_cols],
             empty_rows,
-            counter_solutions: 0,
-            counter_steps: 0,
             stack: {
-                let mut stack = Vec::with_capacity(num_cols);
-                stack.push(FinalState::Start);
-                stack
-            },
+                let mut s = Vec::with_capacity(num_cols);
+                s.push(FinalState::Start);
+                s
+            }
         }
     }
 
+    fn map_solution(&mut self, k: usize) -> &[usize] {
+        for i in 0..k {
+            let node = self.o[i];
+            let row = self.x[node].row_label;
+            self.o_rows[i] = row;
+        }
+        &self.o_rows[..k]
+    }
 
     /// The current partial solution, i.e. the solver's current row stack.
     pub fn current_partial_solution(&self) -> PartialCover {
@@ -174,6 +220,7 @@ impl ExactCoverSolver {
             _ => k = k.saturating_sub(1),
         }
 
+        // TODO: replace with solution()
         PartialCover(self.o.iter()
             .take(k)
             .map(|&r| self.x[r].row_label)
@@ -191,49 +238,46 @@ impl ExactCoverSolver {
     }
 
     /// Return the next solver step if there are any remaining to take.
-    pub fn next_step(&mut self) -> Option<SolverStep> {
-        let step = self.next_step_inner();
-        if step.is_some() {
-            self.counter_steps += 1;
-        }
-        step
-    }
-
-    fn next_step_inner(&mut self) -> Option<SolverStep> {
+    pub fn next_step<'b: 'a, 'a>(&'b mut self) -> Option<SolverStep<'a>> {
         while let Some(st) = self.stack.pop() {
             let k = self.stack.len();
             match st {
                 FinalState::Start => {
                     if self.x[HEAD].right == HEAD {
-                        let solution = ExactCover(self.o.iter()
-                            .take(k)
-                            .map(|&r| self.x[r].row_label)
-                            .collect::<Vec<_>>());
-                        self.counter_solutions += 1;
-
-                        return Some(SolverStep::ReportSolution(solution));
+                        let solution = ExactCover(self.map_solution(k));
+                        return Some(
+                            SolverStep::ReportSolution(solution)
+                        );
                     } else {
-                        let (col_node, size) = self.least_col_with_least_ones();
-                        self.stack.push(FinalState::AfterColumnChoice { col_node });
+                        let (col_node, size) = self
+                            .least_col_with_least_ones();
+                        self.stack.push(
+                            FinalState::AfterColumnChoice { col_node }
+                        );
                         self.cover(col_node);
 
                         return Some(SolverStep::SelectColumn {
-                            col: col_node-1, size });
+                            col: col_node-1, size
+                        });
                     }
                 },
                 FinalState::AfterColumnChoice { col_node } => {
                     let r = self.x[col_node].down;
                     if r != col_node {
-                        // TODO: factor out duplication of first half of the loop.
+                        // TODO: factor out duplication of first
+                        // half of the loop.
                         let newrow = self.x[r].row_label;
                         self.o[k] = r;
 
-                        self.stack.push(FinalState::AfterAddOrReplaceRow { r });
+                        self.stack.push(
+                            FinalState::AfterAddOrReplaceRow { r }
+                        );
                         return Some(SolverStep::PushRow(newrow));
                     } else {
                         self.uncover(col_node);
-
-                        return Some(SolverStep::DeselectColumn(col_node-1));
+                        return Some(
+                            SolverStep::DeselectColumn(col_node-1)
+                        );
                     }
                 },
                 FinalState::AfterAddOrReplaceRow { r } => {
@@ -262,18 +306,25 @@ impl ExactCoverSolver {
 
                     r = self.x[r].down;
                     // First half of the loop again. TODO factor out
-                    // though now it's a resumption, so we know to REPLACE
-                    // and REMOVE
+                    // though now it's a resumption, so we know to
+                    // REPLACE and REMOVE
                     if r != col_node {
-                        // TODO: factor out duplication of first half of the loop.
+                        // TODO: factor out duplication of first half
+                        // of the loop.
                         let newrow = self.x[r].row_label;
                         self.o[k] = r;
 
-                        self.stack.push(FinalState::AfterAddOrReplaceRow { r });
+                        self.stack.push(
+                            FinalState::AfterAddOrReplaceRow { r }
+                        );
 
-                        return Some(SolverStep::AdvanceRow(previous_row, newrow));
+                        return Some(SolverStep::AdvanceRow(
+                            previous_row, newrow
+                        ));
                     } else {
-                        self.stack.push(FinalState::AfterRemoveRow { col_node });
+                        self.stack.push(
+                            FinalState::AfterRemoveRow { col_node }
+                        );
 
                         return Some(SolverStep::PopRow(previous_row));
                     }
@@ -289,20 +340,17 @@ impl ExactCoverSolver {
     }
 
     /// Returns an iterator through remaining solutions.
-    pub fn iter_solutions(&mut self) -> ExactCoverSolutionIter {
-        ExactCoverSolutionIter { solver: self }
-    }
+    // pub fn iter_solutions(&mut self) -> Solutions {
+    //     Solutions { solver: self }
+    // }
 
-    /// Returns an iterator through remaining solver steps.
-    pub fn iter_steps(&mut self) -> ExactCoverStepIter {
-        ExactCoverStepIter { solver: self }
-    }
+    // /// Returns an iterator through remaining solver steps.
+    // pub fn iter_steps(&mut self) -> SolverSteps {
+    //     SolverSteps { solver: self }
+    // }
 
-    // TODO. When just solving efficiently, we will simply want to return the col
-    // (and maybe the size). But for diagnostic purposes, we may want to return
-    // all of the cols of relevant size.
-    // returns index of the col node. and the smallest size INDEX OF THE COL NODE
-    // not the COLUMN
+    // Returns index of the col node NOT THE COLUMN.
+    // and the smallest size.
     fn least_col_with_least_ones(&self) -> (usize, usize) {
         // We know at this point that HEAD.right != HEAD.
         // otherwise we exit early in search.
@@ -375,10 +423,4 @@ impl ExactCoverSolver {
         let l = self.x[c].left;
         self.x[l].right = c;
     }
-
-    /// The number of solutions seen so far.
-    pub fn counter_solutions(&self) -> u64 { self.counter_solutions }
-
-    /// The number of solver steps performed so far.
-    pub fn counter_steps(&self) -> u64 { self.counter_steps }
 }

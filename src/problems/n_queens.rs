@@ -3,11 +3,11 @@ use std::{collections::HashSet, fmt::{Debug, Formatter}, fmt};
 use itertools::Itertools;
 
 use crate::{
-    solver::{ExactCover, ExactCoverSolver, ExactCoverProblem, PartialCover},
-    sparse_binary_matrix::SparseBinaryMatrix,
-
+    solver::{
+        ExactCover, ExactCoverSolver, ExactCoverProblem, PartialCover,
+        ExactCoverRepresentable,
+    },
 };
-use super::ExactCoverRepresentable;
 
 /// Create a new representation of an n-queens problem.
 #[derive(Debug, Copy, Clone)]
@@ -43,18 +43,21 @@ impl ExactCoverRepresentable for NQueens {
                     [row_constraint, col_constraint, diag1_constraint, diag2_constraint].into_iter()
                 });
             // These are both infallible as constructed above.
-            let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
-            let problem = ExactCoverProblem::new_general(matrix, secondary_columns).unwrap();
+            // let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
+            let problem = ExactCoverProblem::new(
+                ones, num_cols, secondary_columns,
+            ).unwrap();
             problem
         } else {
-            let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
-            let problem = ExactCoverProblem::new_general(matrix, 0).unwrap();
+            // let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
+            let problem = ExactCoverProblem::new(
+                std::iter::empty::<std::iter::Empty<_>>(), 0, 0).unwrap();
             problem
         }
     }
 
     fn from_exact_cover(&self, solution: &ExactCover) -> Self::TSolution {
-        self.from_vec(&solution.0)
+        self.from_vec(solution.val())
     }
 
     fn from_partial_cover(&self, solution: &PartialCover) -> Self::TPartialSolution {
@@ -103,13 +106,14 @@ impl NQueens {
         solutions
     }
 
-    fn doeverything() {
-        let problem = NQueens::new(8);
-        let mut solver = ExactCoverSolver::new(&problem.exact_cover_problem());
-        let solutions = solver.iter_solutions()
-            .map(|s| problem.from_exact_cover(&s))
-            .collect::<Vec<_>>();
-    }
+    // fn doeverything() {
+    //     let problem = NQueens::new(8);
+    //     let mut solver = ExactCoverSolver::new(&problem.exact_cover_problem());
+    //     let solutions = vec![];
+    //     while let Some(soln) = solver.next_solution() {
+    //         solutions.insert(problem.from_exact_cover(soln));
+    //     }
+    // }
 }
 
 fn valid_queens<'a>(queens: impl Iterator<Item = &'a BoardSquare>, n: usize) -> bool {

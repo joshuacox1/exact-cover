@@ -3,7 +3,10 @@
 //! live in the `problems` module. This is because their generation
 //! TODO: have some simple test _step_ cases for fine-grained detail.
 
-use crate::{problems::{ExactCoverRepresentable, NQueens}, solver::{ExactCover, ExactCoverSolver, ExactCoverProblem}, sparse_binary_matrix::SparseBinaryMatrix};
+use crate::{
+    problems::NQueens,
+    solver::{ExactCover, ExactCoverSolver, ExactCoverRepresentable,
+        ExactCoverProblem, SparseBinaryMatrix}};
 
 pub trait TestCase {
     fn spec(&self) -> ExactCoverProblem;
@@ -34,7 +37,7 @@ impl TestCase for KnuthSimple {
             [o,o,o,x,x,o,x],
         ];
         let matrix = SparseBinaryMatrix::from_array_2d(arrays);
-        ExactCoverProblem::new_standard(matrix)
+        ExactCoverProblem::new_general(matrix, 0).unwrap()
     }
 
     fn expected_solutions(&self) -> Vec<ExactCover> {
