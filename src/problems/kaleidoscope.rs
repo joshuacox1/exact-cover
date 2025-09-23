@@ -244,8 +244,11 @@ fn transform(
 }
 
 
-pub fn all_valid_placements(board: &Board) -> Vec<Vec<usize>> {
-    generate_piece_rotations().iter()
+// 82
+pub const NUM_CONSTRAINTS: usize = NUM_PIECES + 8*8;
+
+pub fn kaleidoscope_cover(board: &Board) -> ExactCoverProblem {
+    let ones = generate_piece_rotations().iter()
         .enumerate()
         .flat_map(|(i,p)| p.iter()
             .filter(|placement|
@@ -261,10 +264,11 @@ pub fn all_valid_placements(board: &Board) -> Vec<Vec<usize>> {
                 for &(Coord(x,y), _) in placement {
                     row.push(NUM_PIECES + 8*(y as usize) + (x as usize));
                 }
-                row
+                row.into_iter()
             })
         )
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+    ExactCoverProblem::new(ones.into_iter(), NUM_CONSTRAINTS, 0).unwrap()
 }
 
 
@@ -277,6 +281,17 @@ pub const HOT_AIR_BALLOON: Board = Board([
     [Y,B,Y,B,R,B,Y,B],
     [B,Y,B,Y,B,Y,B,Y],
     [L,B,L,B,R,B,L,B],
+]);
+
+pub const BABY_ELEPHANT: Board = Board([
+    [B,R,B,R,B,R,B,R],
+    [R,B,R,B,R,B,R,B],
+    [B,R,B,R,B,R,B,R],
+    [R,B,R,R,R,B,R,B],
+    [R,B,B,B,R,R,B,R],
+    [B,R,B,B,B,B,R,B],
+    [R,R,R,B,B,B,R,R],
+    [B,R,R,B,R,B,R,B],
 ]);
 
 // // There are 8*(8-1)*2 = 112 internal edges on an 8x8 square board.
@@ -428,16 +443,7 @@ pub const HOT_AIR_BALLOON: Board = Board([
 
 // /* Examples */
 
-// const BABY_ELEPHANT = [
-//     ['B','R','B','R','B','R','B','R'],
-//     ['R','B','R','B','R','B','R','B'],
-//     ['B','R','B','R','B','R','B','R'],
-//     ['R','B','R','R','R','B','R','B'],
-//     ['R','B','B','B','R','R','B','R'],
-//     ['B','R','B','B','B','B','R','B'],
-//     ['R','R','R','B','B','B','R','R'],
-//     ['B','R','R','B','R','B','R','B'],
-// ];
+
 // const GAMES_BOARD = (() => {
 //     const b = "B";
 //     const r = "R";

@@ -40,14 +40,22 @@ fn main() {
         //     println!("    {rot:?}");
         // }
     }
-    let q: usize = kaleidoscope::generate_piece_rotations()
-        .iter()
-        .map(|p| p.len())
-        .sum();
+    let kl_problem = kaleidoscope::kaleidoscope_cover(
+        &kaleidoscope::BABY_ELEPHANT);
 
-    for row in kaleidoscope::all_valid_placements(&kaleidoscope::HOT_AIR_BALLOON) {
-        println!("{row:?}");
+    for q in kl_problem.ordered_points_rows() {
+        println!("{:?}", q.collect::<Vec<_>>());
     }
+
+    let mut solver = ExactCoverSolver::new(&kl_problem);
+    println!("{}", solver.iter_solutions().count());
+    // for soln in solver.iter_solutions() {
+    //     println!("{soln:?}");
+    // }
+
+    // for row in kaleidoscope::all_valid_placements(&kaleidoscope::HOT_AIR_BALLOON) {
+    //     println!("{row:?}");
+    // }
 
     // for (q, s) in &w {
     // }
