@@ -5,7 +5,7 @@ mod problems;
 pub use solver::{
     ExactCoverSolver, ExactCoverProblem,
     ExactCover, PartialCover, SolverStep,
-    // Solutions, SolverSteps,
+    Solutions, SolverSteps,
     ExactCoverRepresentable,
 };
 

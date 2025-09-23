@@ -8,29 +8,46 @@ use exact_cover_solver::{
     ExactCoverSolver, ExactCoverRepresentable, SolverStep
 };
 use exact_cover_solver::NQueens;
+use exact_cover_solver::kaleidoscope;
 
 
 fn main() {
-    let n = 14;
+    // let n = 14;
 
-    let queens = Box::new(NQueens::new(n).exact_cover_problem());
-    println!("Memoryreqs: {}",
-        ExactCoverSolver::memory_reqs(88, 225, 900));
-    println!("Memoryreqs!: {}",
-        ExactCoverSolver::memory_reqs(4096, 4096, 65536));
-    println!(
-        "rows: {}, cols: {} (pr: {} + sc: {}), ones: {}",
-        queens.rows(),
-        queens.columns(),
-        queens.primary_columns(),
-        queens.secondary_columns(),
-        queens.num_ones(),
-    );
+    // let queens = Box::new(NQueens::new(n).exact_cover_problem());
+    // println!("Memoryreqs: {}",
+    //     ExactCoverSolver::memory_reqs(88, 225, 900));
+    // println!("Memoryreqs!: {}",
+    //     ExactCoverSolver::memory_reqs(4096, 4096, 65536));
+    // println!(
+    //     "rows: {}, cols: {} (pr: {} + sc: {}), ones: {}",
+    //     queens.rows(),
+    //     queens.columns(),
+    //     queens.primary_columns(),
+    //     queens.secondary_columns(),
+    //     queens.num_ones(),
+    // );
 
-    let mut solver = Box::new(ExactCoverSolver::new(&queens));
-    let p = solver.iter_solutions().count();
+    // let mut solver = Box::new(ExactCoverSolver::new(&queens));
+    // let p = solver.iter_solutions().count();
 
-    println!("{p}");
+    // println!("{p}");
+
+    for (i,piece) in kaleidoscope::generate_piece_rotations()
+            .iter().enumerate() {
+        println!("PIECE {i}, len: {}", piece.len());
+        // for rot in piece.iter() {
+        //     println!("    {rot:?}");
+        // }
+    }
+    let q: usize = kaleidoscope::generate_piece_rotations()
+        .iter()
+        .map(|p| p.len())
+        .sum();
+
+    for row in kaleidoscope::all_valid_placements(&kaleidoscope::HOT_AIR_BALLOON) {
+        println!("{row:?}");
+    }
 
     // for (q, s) in &w {
     // }

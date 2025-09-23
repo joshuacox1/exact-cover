@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use crate::{ExactCoverProblem, ExactCover};
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Colour { Black, Red, Blue, Yellow }
 
@@ -138,6 +140,7 @@ const SQUARE_DATA: [(Coord, Colour); 128] = [
 // Each colour consists of 2 bits, so a board has 2*64 = 128 bits
 // which is 16 bytes. We can put this in a u128 perhaps?
 pub struct Board([[Colour; 8]; 8]);
+// Could impl the Index trait, I guess. Probably should
 
 impl Board {
     // pub fn from(arr: [[Colour; 8]; 8]) -> Self {
@@ -155,14 +158,31 @@ impl Board {
     // pub fn to_exact_cover
 }
 
-pub fn generate_piece_rotations(
-    board: &Board,
-) -> Vec<Vec<Vec<(Coord, Colour)>>> {
-    let mut all = vec![];
+// There should be 5,720 rotations:
+// PIECE 0, len: 128
+// PIECE 1, len: 128
+// PIECE 2, len: 448
+// PIECE 3, len: 384
+// PIECE 4, len: 384
+// PIECE 5, len: 392
+// PIECE 6, len: 392
+// PIECE 7, len: 336
+// PIECE 8, len: 336
+// PIECE 9, len: 336
+// PIECE 10, len: 336
+// PIECE 11, len: 336
+// PIECE 12, len: 336
+// PIECE 13, len: 336
+// PIECE 14, len: 336
+// PIECE 15, len: 392
+// PIECE 16, len: 320
+// PIECE 17, len: 64
+// Encode this at compile time?
+pub fn generate_piece_rotations() -> [Vec<Vec<(Coord, Colour)>>; NUM_PIECES] {
+    let mut all = [const { vec![] }; NUM_PIECES];
 
     for (i, &(data_idx, data_len)) in PIECE_INDICES.iter().enumerate() {
         let mut set = HashSet::new();
-        // red and black side is at
         let idx1 = data_idx;
         let idx2 = idx1+data_len;
         let idx3 = idx2+data_len;
@@ -171,7 +191,9 @@ pub fn generate_piece_rotations(
         let back_data = &SQUARE_DATA[idx2..idx3];
         rot_refl(back_data, &mut set);
 
-        all.push(set.into_iter().collect::<Vec<_>>());
+        // let mut result = set.into_iter().collect::<Vec<_>>();
+        // result.sort_unstable_by_key();
+        all[i].extend(set.into_iter());
     }
 
     all
@@ -222,6 +244,40 @@ fn transform(
 }
 
 
+pub fn all_valid_placements(board: &Board) -> Vec<Vec<usize>> {
+    generate_piece_rotations().iter()
+        .enumerate()
+        .flat_map(|(i,p)| p.iter()
+            .filter(|placement|
+                placement.iter().all(|&(Coord(x,y), c)|
+                    board.0[y as usize][x as usize] == c)
+            )
+            // make this nice
+            .map(move |placement| {
+                // Each row is the piece's ID in reverse order
+                // plus each square
+                let mut row = Vec::with_capacity(1+placement.len());
+                row.push(NUM_PIECES - 1 - i);
+                for &(Coord(x,y), _) in placement {
+                    row.push(NUM_PIECES + 8*(y as usize) + (x as usize));
+                }
+                row
+            })
+        )
+        .collect::<Vec<_>>()
+}
+
+
+pub const HOT_AIR_BALLOON: Board = Board([
+    [B,L,B,L,B,L,B,L],
+    [Y,B,Y,B,R,B,Y,B],
+    [B,Y,B,R,R,R,B,Y],
+    [L,B,R,R,B,R,R,B],
+    [B,L,B,R,R,R,B,L],
+    [Y,B,Y,B,R,B,Y,B],
+    [B,Y,B,Y,B,Y,B,Y],
+    [L,B,L,B,R,B,L,B],
+]);
 
 // // There are 8*(8-1)*2 = 112 internal edges on an 8x8 square board.
 // // Use the low 112 bits of a u128 to encode this. A solution
