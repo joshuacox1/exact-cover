@@ -41,17 +41,53 @@ fn main() {
         // }
     }
     let kl_problem = kaleidoscope::kaleidoscope_cover(
-        &kaleidoscope::BABY_ELEPHANT);
+        &kaleidoscope::CHECKERBOARD);
+        // &kaleidoscope::BABY_ELEPHANT);
 
-    for q in kl_problem.ordered_points_rows() {
-        println!("{:?}", q.collect::<Vec<_>>());
-    }
+    // for (i,q) in kl_problem.ordered_points_rows().enumerate() {
+    //     // if [42, 80, 113, 574, 614, 351, 318, 412, 456, 797, 769, 191, 261, 736, 704, 488, 529, 666].contains(&i) {
+    //     // if i == 736 || i == 742 {
+    //         println!("{i}: {:?}", q.collect::<Vec<_>>());
+    //     // }
+    // }
+
+    let zz = kl_problem.ordered_points_rows()
+        .map(|w| w.collect::<Vec<_>>())
+        .collect::<Vec<_>>();
 
     let mut solver = ExactCoverSolver::new(&kl_problem);
-    println!("{}", solver.iter_solutions().count());
-    // for soln in solver.iter_solutions() {
-    //     println!("{soln:?}");
+    // println!("{}", solver.iter_solutions().count());
+    let mut y = 0u64;
+    for soln in solver.iter_solutions() {
+        y += 1;
+        if y % 100_000 == 0 {
+            println!("Churned through {y} solutions...");
+        }
+    }
+    println!("{y} solutions in total.");
+
+
+    // let a =       [10, 95, 139, 581, 616, 347, 339, 410, 474, 797, 779, 219, 252, 717, 693, 505, 532, 658];
+    // ExactCover([10, 95, 139, 581, 616, 347, 339, 410, 474, 797, 779, 219, 252, 732, 693, 505, 532, 658])
+
+    // let n = solver.next_solution().unwrap();
+    // println!("{n:?}");
+    // let mut p = vec![];
+    // for &u in b.unwrap().0.iter() {
+    //     println!("{:?}", zz[u]
+    //         .iter()
+    //         .skip(1)
+    //         .map(|o| ((o-18).rem_euclid(8), (o-18).div_euclid(8)))
+    //         .collect::<Vec<_>>());
     // }
+    // for u in &p {
+    //     println!("{u:?}");
+    // }
+    // println!("{:?}", p.len());
+
+    // ???
+    // ExactCover([42, 80, 113, 574, 614, 351, 318, 412, 456, 797, 769, 191, 261, 736, 704, 488, 529, 666])
+    // ExactCover([42, 80, 113, 574, 614, 351, 318, 412, 456, 797, 769, 191, 261, 742, 704, 488, 529, 666])
 
     // for row in kaleidoscope::all_valid_placements(&kaleidoscope::HOT_AIR_BALLOON) {
     //     println!("{row:?}");

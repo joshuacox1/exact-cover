@@ -194,6 +194,7 @@ pub fn generate_piece_rotations() -> [Vec<Vec<(Coord, Colour)>>; NUM_PIECES] {
         // let mut result = set.into_iter().collect::<Vec<_>>();
         // result.sort_unstable_by_key();
         all[i].extend(set.into_iter());
+        // all[i]
     }
 
     all
@@ -239,6 +240,7 @@ fn transform(
             return None;
         }
     }
+    new.sort_unstable_by_key(|(Coord(x,y),_)| (*x,*y));
 
     Some(new)
 }
@@ -264,10 +266,15 @@ pub fn kaleidoscope_cover(board: &Board) -> ExactCoverProblem {
                 for &(Coord(x,y), _) in placement {
                     row.push(NUM_PIECES + 8*(y as usize) + (x as usize));
                 }
+                row.sort_unstable();
                 row.into_iter()
             })
         )
         .collect::<Vec<_>>();
+    // for o in ones {
+    //     println!("{o:?}");
+    // }
+    // unimplemented!();
     ExactCoverProblem::new(ones.into_iter(), NUM_CONSTRAINTS, 0).unwrap()
 }
 
@@ -292,6 +299,28 @@ pub const BABY_ELEPHANT: Board = Board([
     [B,R,B,B,B,B,R,B],
     [R,R,R,B,B,B,R,R],
     [B,R,R,B,R,B,R,B],
+]);
+
+pub const QUESTION_MARK: Board = Board([
+    [B,L,B,Y,B,L,B,Y],
+    [Y,B,L,R,R,B,L,B],
+    [B,Y,B,B,R,Y,B,L],
+    [L,B,Y,R,R,B,Y,B],
+    [B,L,B,R,B,L,B,Y],
+    [Y,B,L,B,Y,B,L,B],
+    [B,Y,B,R,B,Y,B,L],
+    [L,B,Y,B,L,B,Y,B],
+]);
+
+pub const CHECKERBOARD: Board = Board([
+    [R,B,R,B,R,B,R,B],
+    [B,R,B,R,B,R,B,R],
+    [R,B,R,B,R,B,R,B],
+    [B,R,B,R,B,R,B,R],
+    [R,B,R,B,R,B,R,B],
+    [B,R,B,R,B,R,B,R],
+    [R,B,R,B,R,B,R,B],
+    [B,R,B,R,B,R,B,R],
 ]);
 
 // // There are 8*(8-1)*2 = 112 internal edges on an 8x8 square board.
@@ -492,16 +521,7 @@ pub const BABY_ELEPHANT: Board = Board([
 //         [l,b,y,b,l,b,y,b],
 //     ];
 // })();
-// const QUESTION_MARK = [
-//     ["B","L","B","Y","B","L","B","Y"],
-//     ["Y","B","L","R","R","B","L","B"],
-//     ["B","Y","B","B","R","Y","B","L"],
-//     ["L","B","Y","R","R","B","Y","B"],
-//     ["B","L","B","R","B","L","B","Y"],
-//     ["Y","B","L","B","Y","B","L","B"],
-//     ["B","Y","B","R","B","Y","B","L"],
-//     ["L","B","Y","B","L","B","Y","B"],
-// ];
+
 // const DOMINOES_CLASH = [
 //     ["B","B","R","R","B","B","R","R"],
 //     ["B","R","B","B","R","R","B","B"],
