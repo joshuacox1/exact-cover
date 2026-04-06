@@ -1,12 +1,13 @@
 use std::collections::HashSet;
+use image::{RgbImage, Rgb};
 
-use crate::{ExactCoverProblem, ExactCover};
+use crate::{ExactCoverProblem, ExactCover, ExactCoverSolver};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Colour { Black, Red, Blue, Yellow }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Coord(i8, i8);
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Coord(pub i8, pub i8);
 
 impl Coord {
     fn valid(&self) -> bool {
@@ -178,7 +179,7 @@ impl Board {
 // PIECE 16, len: 320
 // PIECE 17, len: 64
 // Encode this at compile time?
-pub fn generate_piece_rotations() -> [Vec<Vec<(Coord, Colour)>>; NUM_PIECES] {
+pub fn generate_piece_rotations() -> [Vec<(Vec<(Coord, Colour)>, EdgeMask)>; NUM_PIECES] {
     let mut all = [const { vec![] }; NUM_PIECES];
 
     for (i, &(data_idx, data_len)) in PIECE_INDICES.iter().enumerate() {
@@ -191,10 +192,13 @@ pub fn generate_piece_rotations() -> [Vec<Vec<(Coord, Colour)>>; NUM_PIECES] {
         let back_data = &SQUARE_DATA[idx2..idx3];
         rot_refl(back_data, &mut set);
 
-        // let mut result = set.into_iter().collect::<Vec<_>>();
-        // result.sort_unstable_by_key();
-        all[i].extend(set.into_iter());
-        // all[i]
+        let result = &mut all[i];
+        result.extend(set.into_iter()
+            .map(|v| {
+                let e = edge_mask(v.iter().map(|&(c,_)| c));
+                (v, e)
+            }));
+        result.sort_unstable();
     }
 
     all
@@ -240,7 +244,7 @@ fn transform(
             return None;
         }
     }
-    new.sort_unstable_by_key(|(Coord(x,y),_)| (*x,*y));
+    new.sort_unstable();
 
     Some(new)
 }
@@ -249,33 +253,79 @@ fn transform(
 // 82
 pub const NUM_CONSTRAINTS: usize = NUM_PIECES + 8*8;
 
-pub fn kaleidoscope_cover(board: &Board) -> ExactCoverProblem {
-    let ones = generate_piece_rotations().iter()
+pub fn kaleidoscope_cover(board: &Board) {
+    let matching_rows = generate_piece_rotations().into_iter()
         .enumerate()
-        .flat_map(|(i,p)| p.iter()
-            .filter(|placement|
+        .flat_map(|(i,p)| p.into_iter()
+            .filter(|(placement,_)|
                 placement.iter().all(|&(Coord(x,y), c)|
                     board.0[y as usize][x as usize] == c)
             )
-            // make this nice
-            .map(move |placement| {
-                // Each row is the piece's ID in reverse order
-                // plus each square
-                let mut row = Vec::with_capacity(1+placement.len());
-                row.push(NUM_PIECES - 1 - i);
-                for &(Coord(x,y), _) in placement {
-                    row.push(NUM_PIECES + 8*(y as usize) + (x as usize));
-                }
-                row.sort_unstable();
-                row.into_iter()
-            })
-        )
-        .collect::<Vec<_>>();
-    // for o in ones {
-    //     println!("{o:?}");
-    // }
-    // unimplemented!();
-    ExactCoverProblem::new(ones.into_iter(), NUM_CONSTRAINTS, 0).unwrap()
+            .map(move |(placement,edgemask)| (i, placement, edgemask))
+        ).collect::<Vec<_>>();
+
+    let exact_cover_problem_ones = matching_rows
+        .iter()
+        .map(move |(i, placement, _)| {
+            // Each row is the piece's ID in reverse order
+            // plus each square
+            let mut row = Vec::with_capacity(1+placement.len());
+            row.push(NUM_PIECES - 1 - i);
+            for &(Coord(x,y), _) in placement.iter() {
+                row.push(NUM_PIECES + 8*(y as usize) + (x as usize));
+            }
+            row.sort_unstable();
+            row.into_iter()
+        });
+    let exact_cover_problem = ExactCoverProblem::new(
+        exact_cover_problem_ones, NUM_CONSTRAINTS, 0,
+    ).unwrap();
+
+    let mut solver = ExactCoverSolver::new(&exact_cover_problem);
+    let mut y = 0u64;
+    for soln in solver.iter_solutions() {
+        y += 1;
+        if y % 100_000 == 0 {
+            println!("Churned through {y} solutions...");
+        }
+
+        let mut em = 0u128;
+        for row_idx in soln.0 {
+            let (piece_idx, plcment, edge_mask) = &matching_rows[row_idx];
+            em |= edge_mask;
+            // println!("{plcment:?}");
+        }
+        println!("{em:0128b}");
+    }
+    println!("{y} solutions in total.");
+
+
+    // let ones = generate_piece_rotations().iter()
+    //     .enumerate()
+    //     .flat_map(|(i,p)| p.iter()
+    //         .filter(|&(placement,_)|
+    //             placement.iter().all(|&(Coord(x,y), c)|
+    //                 board.0[y as usize][x as usize] == c)
+    //         )
+    //         // make this nice
+    //         .map(move |(placement,_)| {
+    //             // Each row is the piece's ID in reverse order
+    //             // plus each square
+    //             let mut row = Vec::with_capacity(1+placement.len());
+    //             row.push(NUM_PIECES - 1 - i);
+    //             for &(Coord(x,y), _) in placement {
+    //                 row.push(NUM_PIECES + 8*(y as usize) + (x as usize));
+    //             }
+    //             row.sort_unstable();
+    //             row.into_iter()
+    //         })
+    //     )
+    //     .collect::<Vec<_>>();
+    // // for o in ones {
+    // //     println!("{o:?}");
+    // // }
+    // // unimplemented!();
+    // ExactCoverProblem::new(ones.into_iter(), NUM_CONSTRAINTS, 0).unwrap()
 }
 
 
@@ -328,7 +378,92 @@ pub const CHECKERBOARD: Board = Board([
 // // is then just an edge mask (visually at least).
 // // In this form the copies of two-black solutions are
 // // indistinguishable. May want to filter those out.
-// type EdgeMask = u128;
+type EdgeMask = u128;
+
+fn edge_mask(
+    coords: impl Iterator<Item = Coord>,
+) -> EdgeMask {
+    let mut mask_inner = 0u128;
+    for Coord(x,y) in coords {
+        // edges (x,y,R),(x,y,D),(x-1,y,R),(x,y-1,D).
+        // only -1 if non-zero, only the thing i f7
+        // let (x,y) = (x as usize, y as usize);
+        // i8s are just large enough to << all the way to the end
+        // with +127.
+        let mut mask = 0u128;
+        if x < 7 { mask |= 1 << (8*y + x); }
+        if y < 7 { mask |= 1 << (64 + 8*y + x); }
+        if x > 0 { mask |= 1 << (8*y + x-1); }
+        if y > 0 { mask |= 1 << (64 + 8*(y-1) + x); }
+
+        mask_inner ^= mask;
+    }
+    mask_inner
+}
+
+
+const SQ_PIXEL_SIZE: u32 = 31;
+const WHITE_RGB: Rgb<u8> = Rgb([0xf0, 0xf0, 0xf0]);
+const GREY_RGB: Rgb<u8> = Rgb([0x60, 0x60, 0x60]);
+const BLACK_RGB: Rgb<u8> = Rgb([0x20, 0x20, 0x20]);
+const RED_RGB: Rgb<u8> = Rgb([0xe5, 0x12, 0x12]);
+const BLUE_RGB: Rgb<u8> = Rgb([0x0f, 0x6b, 0xff]);
+const YELLOW_RGB: Rgb<u8> = Rgb([0xdd, 0xaa, 0x00]);
+
+// all 1s is not a valid edge mask so use that as a less wasteful Option
+pub fn draw_board(board: &Board, /*edgem: Option<EdgeMask>*/) -> RgbImage {
+    let s1 = SQ_PIXEL_SIZE+1;
+    let image_size = 8*s1 + 1;
+    let mut img = RgbImage::new(image_size, image_size);
+
+    for y in 0..image_size {
+        for x in 0..image_size {
+            let x_mod = x.rem_euclid(s1);
+            let y_mod = y.rem_euclid(s1);
+            let x_div = x.div_euclid(s1) as usize;
+            let y_div = y.div_euclid(s1) as usize;
+            let px_colour = if x_mod == 0 || y_mod == 0 {
+                // // Top-left corner of a square, or right/bottom
+                // // edge of the entire image
+                // if x_mod == y_mod || x_mod == 8 || y_mod == 8 {
+                //     WHITE_RGB
+                // } else {
+                //     // x > y means a down
+
+                // }
+                // match x_mod.cmp(&y_mod) {
+                //     // A corner
+                //     Ordering::Eq => WHITE_RGB
+                // }
+                WHITE_RGB
+            } else {
+                if x_div >= 8 || y_div >= 8 {
+                    println!("{x}, {y}, {x_div}, {y_div}, {x_mod}, {y_mod}, {s1}");
+                }
+                let colour = board.0[y_div][x_div];
+                match colour {
+                    Colour::Black => BLACK_RGB,
+                    Colour::Red => RED_RGB,
+                    Colour::Blue => BLUE_RGB,
+                    Colour::Yellow => YELLOW_RGB,
+                }
+            };
+            img.put_pixel(x, y, px_colour);
+        }
+    }
+
+    img.save("test_file.png").unwrap();
+
+    img
+}
+
+
+
+
+
+
+
+// fn edge_masks
 
 // // Precalculated edge matrix.
 // const EDGE_MASKS: [EdgeMask; 64] = [
