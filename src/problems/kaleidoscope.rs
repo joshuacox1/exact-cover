@@ -283,20 +283,28 @@ pub fn kaleidoscope_cover(board: &Board) {
 
     let mut solver = ExactCoverSolver::new(&exact_cover_problem);
     let mut y = 0u64;
-    for soln in solver.iter_solutions() {
+    // for soln in solver.iter_solutions() {
+    //     y += 1;
+    //     if y % 1_000 == 0 {
+    //         println!("Churned through {y} solutions...");
+    //     }
+
+    //     // This is for printing solutions as u128 edge masks.
+    //     // Should keep this idea, probably.
+    //     // let mut em = 0u128;
+    //     // for row_idx in soln.0 {
+    //     //     let (piece_idx, plcment, edge_mask) = &matching_rows[row_idx];
+    //     //     em |= edge_mask;
+    //     //     // println!("{plcment:?}");
+    //     // }
+    //     // println!("{em:0128b}");
+    // }
+    solver.for_solutions(|_| {
         y += 1;
         if y % 100_000 == 0 {
             println!("Churned through {y} solutions...");
         }
-
-        let mut em = 0u128;
-        for row_idx in soln.0 {
-            let (piece_idx, plcment, edge_mask) = &matching_rows[row_idx];
-            em |= edge_mask;
-            // println!("{plcment:?}");
-        }
-        println!("{em:0128b}");
-    }
+    }, None);
     println!("{y} solutions in total.");
 
 

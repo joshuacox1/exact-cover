@@ -57,11 +57,11 @@ fn main() {
     // }
     // println!("{indices:?}");
 
-    kaleidoscope::draw_board(&kaleidoscope::HOT_AIR_BALLOON);
+    // kaleidoscope::draw_board(&kaleidoscope::HOT_AIR_BALLOON);
 
     kaleidoscope::kaleidoscope_cover(
         // &kaleidoscope::CHECKERBOARD);
-        &kaleidoscope::BABY_ELEPHANT);
+        &kaleidoscope::CHECKERBOARD);
 
     // // for (i,q) in kl_problem.ordered_points_rows().enumerate() {
     // //     // if [42, 80, 113, 574, 614, 351, 318, 412, 456, 797, 769, 191, 261, 736, 704, 488, 529, 666].contains(&i) {
