@@ -426,4 +426,13 @@ impl ExactCoverSolver {
         let l = self.x[c].left;
         self.x[l].right = c;
     }
+
+
+    /// Interior iterator stuffs.
+    pub fn for_solutions<F>(&mut self, mut callback: F, max_solutions: Option<u64>)
+    where F: FnMut(ExactCover) {
+        for soln in self.iter_solutions().take(max_solutions.unwrap_or(u64::MAX) as usize) {
+            callback(soln);
+        }
+    }
 }

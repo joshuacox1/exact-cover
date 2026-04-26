@@ -5,8 +5,8 @@ mod problems;
 pub use solver::{
     ExactCoverSolver, ExactCoverProblem,
     ExactCover, PartialCover, SolverStep,
-    // Solutions, SolverSteps,
+    Solutions, SolverSteps,
     ExactCoverRepresentable,
 };
 
-pub use problems::NQueens;
+pub use problems::{NQueens, kaleidoscope};

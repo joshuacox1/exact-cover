@@ -8,29 +8,110 @@ use exact_cover_solver::{
     ExactCoverSolver, ExactCoverRepresentable, SolverStep
 };
 use exact_cover_solver::NQueens;
+use exact_cover_solver::kaleidoscope;
 
 
 fn main() {
-    let n = 14;
+    // let n = 14;
 
-    let queens = Box::new(NQueens::new(n).exact_cover_problem());
-    println!("Memoryreqs: {}",
-        ExactCoverSolver::memory_reqs(88, 225, 900));
-    println!("Memoryreqs!: {}",
-        ExactCoverSolver::memory_reqs(4096, 4096, 65536));
-    println!(
-        "rows: {}, cols: {} (pr: {} + sc: {}), ones: {}",
-        queens.rows(),
-        queens.columns(),
-        queens.primary_columns(),
-        queens.secondary_columns(),
-        queens.num_ones(),
-    );
+    // let queens = Box::new(NQueens::new(n).exact_cover_problem());
+    // println!("Memoryreqs: {}",
+    //     ExactCoverSolver::memory_reqs(88, 225, 900));
+    // println!("Memoryreqs!: {}",
+    //     ExactCoverSolver::memory_reqs(4096, 4096, 65536));
+    // println!(
+    //     "rows: {}, cols: {} (pr: {} + sc: {}), ones: {}",
+    //     queens.rows(),
+    //     queens.columns(),
+    //     queens.primary_columns(),
+    //     queens.secondary_columns(),
+    //     queens.num_ones(),
+    // );
 
-    let mut solver = Box::new(ExactCoverSolver::new(&queens));
-    let p = solver.iter_solutions().count();
+    // let mut solver = Box::new(ExactCoverSolver::new(&queens));
+    // let p = solver.iter_solutions().count();
 
-    println!("{p}");
+    // println!("{p}");
+
+    // let mut indices = vec![];
+    // for (i,piece) in kaleidoscope::generate_piece_rotations()
+    //         .iter().enumerate() {
+    //     // indices.push(i);
+    //     for (q,e) in piece {
+    //         let mut s = String::new();
+    //         for (coord, colour) in q {
+    //             let colourc = match colour {
+    //                 kaleidoscope::Colour::Black => 'B',
+    //                 kaleidoscope::Colour::Red => 'R',
+    //                 kaleidoscope::Colour::Blue => 'L',
+    //                 kaleidoscope::Colour::Yellow => 'Y',
+    //             };
+    //             s.push_str(&format!("{}{}{colourc} ", coord.0, coord.1));
+    //         }
+    //         println!("{s}{e:0b}");
+    //     }
+    //     println!("PIECE {i}, len: {}", piece.len());
+    //     // for rot in piece.iter() {
+    //     //     println!("    {rot:?}");
+    //     // }
+    // }
+    // println!("{indices:?}");
+
+    // kaleidoscope::draw_board(&kaleidoscope::HOT_AIR_BALLOON);
+
+    kaleidoscope::kaleidoscope_cover(
+        // &kaleidoscope::CHECKERBOARD);
+        &kaleidoscope::CHECKERBOARD);
+
+    // // for (i,q) in kl_problem.ordered_points_rows().enumerate() {
+    // //     // if [42, 80, 113, 574, 614, 351, 318, 412, 456, 797, 769, 191, 261, 736, 704, 488, 529, 666].contains(&i) {
+    // //     // if i == 736 || i == 742 {
+    // //         println!("{i}: {:?}", q.collect::<Vec<_>>());
+    // //     // }
+    // // }
+
+    // let zz = kl_problem.ordered_points_rows()
+    //     .map(|w| w.collect::<Vec<_>>())
+    //     .collect::<Vec<_>>();
+
+    // let mut solver = ExactCoverSolver::new(&kl_problem);
+    // // println!("{}", solver.iter_solutions().count());
+    // let mut y = 0u64;
+    // for soln in solver.iter_solutions() {
+    //     y += 1;
+    //     println!("{soln:?}");
+    //     if y % 100_000 == 0 {
+    //         println!("Churned through {y} solutions...");
+    //     }
+    // }
+    // println!("{y} solutions in total.");
+
+
+    // let a =       [10, 95, 139, 581, 616, 347, 339, 410, 474, 797, 779, 219, 252, 717, 693, 505, 532, 658];
+    // ExactCover([10, 95, 139, 581, 616, 347, 339, 410, 474, 797, 779, 219, 252, 732, 693, 505, 532, 658])
+
+    // let n = solver.next_solution().unwrap();
+    // println!("{n:?}");
+    // let mut p = vec![];
+    // for &u in b.unwrap().0.iter() {
+    //     println!("{:?}", zz[u]
+    //         .iter()
+    //         .skip(1)
+    //         .map(|o| ((o-18).rem_euclid(8), (o-18).div_euclid(8)))
+    //         .collect::<Vec<_>>());
+    // }
+    // for u in &p {
+    //     println!("{u:?}");
+    // }
+    // println!("{:?}", p.len());
+
+    // ???
+    // ExactCover([42, 80, 113, 574, 614, 351, 318, 412, 456, 797, 769, 191, 261, 736, 704, 488, 529, 666])
+    // ExactCover([42, 80, 113, 574, 614, 351, 318, 412, 456, 797, 769, 191, 261, 742, 704, 488, 529, 666])
+
+    // for row in kaleidoscope::all_valid_placements(&kaleidoscope::HOT_AIR_BALLOON) {
+    //     println!("{row:?}");
+    // }
 
     // for (q, s) in &w {
     // }

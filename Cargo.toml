@@ -6,4 +6,6 @@ edition = "2024"
 [dependencies]
 arrayvec = "0.7.6"
 bumpalo = { version = "3.19.0", features = ["collections"] }
+image = "0.25.8"
 itertools = "0.14.0"
+png = "0.18.0"
