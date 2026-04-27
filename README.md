@@ -20,3 +20,37 @@ A fast, efficient solver for the exact cover problem.
 - Clarify {Exact, Partial}Cover type interfaces and the ExactCoverProblem interface
 - Add other problems (pentominos, Sudoku, Kakuro, etc.)
 - Investigate proc macros for test generation, in particular product of cases and invariants
+
+```rust
+fn meow() {
+	let o = false; let x = true;
+	let matrix = SparseBinaryMatrix::from_arrays([
+        [o,o,x,o,x,x,o],
+        [x,o,o,x,o,o,x],
+        [o,x,x,o,o,x,o],
+        [x,o,o,x,o,o,o],
+        [o,x,o,o,o,o,x],
+        [o,o,o,x,x,o,x],
+	]);
+	let problem = ExactCoverProblem::new(matrix, 0).unwrap();
+
+	let mut solver = ExactCoverSolver::new(&problem);
+	let mut num_solutions = 0;
+	while let Some(next_step) = solver.advance() {
+		match next_step {
+			PushColumn(c) => println!("Pushing column {c}"),
+			PopColumn(c) => println!("Popping column {c}"),
+			PushRow(r) => println!("Pushing row {r}"),
+			PopRow(r) => println!("Pushing row {r}"),
+			ReportSolution => {
+				let (cover, is_exact) = solver.get();
+				assert!(is_exact);
+				num_solutions += 1;
+				println!("Found exact cover: {cover:?}");
+			}
+		}
+	}
+
+	println!("Total number of solutions: {num_solutions}");
+}
+```

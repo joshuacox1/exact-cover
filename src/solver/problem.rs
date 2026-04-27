@@ -102,7 +102,7 @@ pub struct SparseBinaryMatrix {
 
 impl SparseBinaryMatrix {
     /// Creates a sparse binary matrix from an array of arrays.
-    pub fn from_array_2d<const ROWS: usize, const COLUMNS: usize>(
+    pub fn from_2d_array<const ROWS: usize, const COLUMNS: usize>(
         array: [[bool; COLUMNS]; ROWS]
     ) -> Self {
         let mut cols = vec![];
@@ -151,18 +151,6 @@ impl SparseBinaryMatrix {
 
     pub fn num_rows(&self) -> usize {
         self.row_starts.len().checked_sub(1).unwrap()
-    }
-
-    /// Returns an iterator of rows, which are themselves iterators
-    /// over the 1s of the array.
-    pub fn ordered_points_rows(&self) -> impl Iterator<Item = impl Iterator<Item = usize>> {
-        // TODO: make this more efficient?
-        (0..(self.row_starts.len()-1))
-            .map(|r| {
-                let start = self.row_starts[r];
-                let end = self.row_starts[r+1];
-                (start..end).map(|i| self.cols[i])
-            })
     }
 }
 

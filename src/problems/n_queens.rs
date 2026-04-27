@@ -4,8 +4,7 @@ use itertools::Itertools;
 
 use crate::{
     solver::{
-        ExactCover, ExactCoverSolver, ExactCoverProblem, PartialCover,
-        ExactCoverRepresentable,
+        ExactCoverSolver, ExactCoverProblem,
     },
 };
 
@@ -23,47 +22,47 @@ impl Debug for BoardSquare {
     }
 }
 
-impl ExactCoverRepresentable for NQueens {
-    type TSolution = Vec<BoardSquare>;
-    type TPartialSolution = Self::TSolution;
+// impl ExactCoverRepresentable for NQueens {
+//     type TSolution = Vec<BoardSquare>;
+//     type TPartialSolution = Self::TSolution;
 
-    fn exact_cover_problem(&self) -> ExactCoverProblem {
-        let n = self.0;
-        if n > 0 {
-            let primary_columns = 2*n;
-            let secondary_columns = 4*n-2;
-            let num_cols = primary_columns + secondary_columns;
-            let ones = (0..n)
-                .cartesian_product(0..n)
-                .map(move |(x,y)| {
-                    let row_constraint = y;
-                    let col_constraint = n + x;
-                    let diag1_constraint = 2*n + x + y;
-                    let diag2_constraint = 4*n + x + n - y - 2;
-                    [row_constraint, col_constraint, diag1_constraint, diag2_constraint].into_iter()
-                });
-            // These are both infallible as constructed above.
-            // let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
-            let problem = ExactCoverProblem::new(
-                ones, num_cols, secondary_columns,
-            ).unwrap();
-            problem
-        } else {
-            // let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
-            let problem = ExactCoverProblem::new(
-                std::iter::empty::<std::iter::Empty<_>>(), 0, 0).unwrap();
-            problem
-        }
-    }
+//     fn exact_cover_problem(&self) -> ExactCoverProblem {
+//         let n = self.0;
+//         if n > 0 {
+//             let primary_columns = 2*n;
+//             let secondary_columns = 4*n-2;
+//             let num_cols = primary_columns + secondary_columns;
+//             let ones = (0..n)
+//                 .cartesian_product(0..n)
+//                 .map(move |(x,y)| {
+//                     let row_constraint = y;
+//                     let col_constraint = n + x;
+//                     let diag1_constraint = 2*n + x + y;
+//                     let diag2_constraint = 4*n + x + n - y - 2;
+//                     [row_constraint, col_constraint, diag1_constraint, diag2_constraint].into_iter()
+//                 });
+//             // These are both infallible as constructed above.
+//             // let matrix = SparseBinaryMatrix::from_sparse_rows(ones, num_cols).unwrap();
+//             let problem = ExactCoverProblem::new(
+//                 ones, num_cols, secondary_columns,
+//             ).unwrap();
+//             problem
+//         } else {
+//             // let matrix = SparseBinaryMatrix::from_array_2d::<0, 0>([]);
+//             let problem = ExactCoverProblem::new(
+//                 std::iter::empty::<std::iter::Empty<_>>(), 0, 0).unwrap();
+//             problem
+//         }
+//     }
 
-    fn from_exact_cover(&self, solution: &ExactCover) -> Self::TSolution {
-        self.from_vec(&solution.0)
-    }
+//     // fn from_exact_cover(&self, solution: &ExactCover) -> Self::TSolution {
+//     //     self.from_vec(&solution.0)
+//     // }
 
-    fn from_partial_cover(&self, solution: &PartialCover) -> Self::TPartialSolution {
-        self.from_vec(&solution.0)
-    }
-}
+//     // fn from_partial_cover(&self, solution: &PartialCover) -> Self::TPartialSolution {
+//     //     self.from_vec(&solution.0)
+//     // }
+// }
 
 
 

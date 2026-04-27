@@ -2,7 +2,7 @@
 //! exact cover problems.
 
 mod n_queens;
-pub mod kaleidoscope;
+// pub mod kaleidoscope;
 
 pub use n_queens::NQueens;
 // pub use kaleidoscope;
