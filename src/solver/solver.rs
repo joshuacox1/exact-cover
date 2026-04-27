@@ -7,6 +7,9 @@ use super::{
     SolverStep
 };
 
+const HEAD: usize = 0;
+const UNUSED: usize = usize::MAX;
+
 // TODO: change internal layout so we don't waste space
 // for size and row label for non-columns.
 // TODO: remove all allocations?
@@ -66,7 +69,7 @@ pub struct ExactCoverSolver {
     empty_rows: Vec<usize>,
     // bounded by num columns. TODO: confirm this is true. Assertions?
     stack: Vec<State>,
-    current_solver_step: SolverStep,
+    solver_step: Option<SolverStep>,
 }
 
 impl ExactCoverSolver {
@@ -164,14 +167,15 @@ impl ExactCoverSolver {
                 let mut s = Vec::with_capacity(num_cols);
                 s.push(State::StartCall);
                 s
-            }
+            },
+            solver_step: None,
         }
     }
 
     /// Returns the solver's current partial cover.
     /// The second entry's boolean is `true` if and only if
     /// the current partial cover is an exact cover.
-    pub fn solution(&self) -> (&[usize], bool) {
+    pub fn solution(&mut self) -> (&[usize], bool) {
         let mut k = self.stack.len();
         match self.stack.last() {
             Some(State::AfterAddOrReplaceRow { .. } | State::ResumeCall) => (),
@@ -186,8 +190,8 @@ impl ExactCoverSolver {
             self.o_rows[i] = row;
         }
 
-        let result = self.o_rows[0..k];
-        let is_solution = self.x[HEAD].right == HEAD;
+        let result = &self.o_rows[0..k];
+        let is_solution = matches!(self.solver_step, Some(SolverStep::ReportSolution));
         // TODO: Is it always correct to return an exact cover when HEAD.right == HEAD?
         (result, is_solution)
     }
@@ -199,7 +203,7 @@ impl ExactCoverSolver {
             match st {
                 State::StartCall => {
                     if self.x[HEAD].right == HEAD {
-                        self.solver_step = SolverStep::ReportSolution;
+                        self.solver_step = Some(SolverStep::ReportSolution);
                     } else {
                         let (col_node, size) = self.least_col_with_least_ones();
                         self.stack.push(State::AfterColumnChoice { col_node });
