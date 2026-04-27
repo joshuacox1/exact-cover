@@ -3,10 +3,10 @@ mod solver;
 mod problems;
 
 pub use solver::{
-    ExactCoverSolver, ExactCoverProblem,
-    ExactCover, PartialCover, SolverStep,
-    Solutions, SolverSteps,
-    ExactCoverRepresentable,
+    ExactCoverSolver, ExactCoverProblem, SparseBinaryMatrix,
+    /*ExactCover, PartialCover,*/ SolverStep,
+    // Solutions, SolverSteps,
+    // ExactCoverRepresentable,
 };
 
-pub use problems::{NQueens, kaleidoscope};
+pub use problems::{kaleidoscope, n_queens};

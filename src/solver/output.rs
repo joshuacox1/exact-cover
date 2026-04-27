@@ -1,41 +1,3 @@
-/// A solution of the solver. i.e. a list of unique row indices which form an
-/// exact cover of the problem.
-/// TODO: fix and make reuse a buffer if possible!
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExactCover(pub Vec<usize>);
-
-// impl<'a> ExactCover<'a> {
-//     pub fn val(&self) -> &[usize] { self.0 }
-//     pub fn to_vec(&self) -> Vec<usize> {
-//         self.0.iter().map(|&i| i).collect::<Vec<_>>()
-//     }
-//     pub fn to_vec_sorted(&self) -> Vec<usize> {
-//         let mut v = self.to_vec();
-//         v.sort_unstable();
-//         v
-//     }
-
-//     // /// Consumes the `ExactCover` and returns a sorted list of row indices.
-//     // pub fn to_sorted(mut self) -> Vec<usize> {
-//     //     self.0.sort_unstable();
-//     //     self.0
-//     // }
-// }
-
-/// A partial solution of the solver.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PartialCover(
-    /// The inner solution.
-    pub Vec<usize>,
-);
-
-impl PartialCover {
-    /// Consumes the `PartialCover` and returns a sorted list of row indices.
-    pub fn to_sorted(mut self) -> Vec<usize> {
-        self.0.sort_unstable();
-        self.0
-    }
-}
 
 /// A single step of the solver.
 /// The solver logically holds a stack containing the row indices
@@ -51,11 +13,11 @@ impl PartialCover {
 /// at all times to a call to `current_partial_solution()`.
 ///
 /// These invariants are tested in a comprehensive test suite.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SolverStep {
     /// Choose a column (constraint) to enumerate over. The solver always
     /// chooses the lowest-indexed column with the fewest satisfying choices.
-    SelectColumn {
+    PushColumn {
         /// The index of the chosen column.
         col: usize,
         /// The number of rows with 1s for this column. This will
@@ -63,13 +25,14 @@ pub enum SolverStep {
         size: usize,
     },
     /// Finished enumerating over this column; bin it.
-    DeselectColumn(usize),
+    PopColumn(usize),
     /// Pushes a row onto the list forming the current provisional solution.
     PushRow(usize),
     /// Advances the latest row being considered in the current provisional solution.
+    /// TODO: delete the first parameter. Or just delete AdvanceRow entirely?
     AdvanceRow(usize, usize),
     /// Pops the last row from the list forming the current provisional solution.
     PopRow(usize),
     /// Reports a complete solution.
-    ReportSolution(ExactCover),
+    ReportSolution,
 }

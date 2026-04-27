@@ -102,7 +102,7 @@ pub struct SparseBinaryMatrix {
 
 impl SparseBinaryMatrix {
     /// Creates a sparse binary matrix from an array of arrays.
-    pub fn from_array_2d<const ROWS: usize, const COLUMNS: usize>(
+    pub fn from_2d_array<const ROWS: usize, const COLUMNS: usize>(
         array: [[bool; COLUMNS]; ROWS]
     ) -> Self {
         let mut cols = vec![];
@@ -180,7 +180,7 @@ mod test {
             [o,o,x,x,x,o],
             [o,o,o,o,o,x],
         ];
-        let arr = SparseBinaryMatrix::from_array_2d(example);
+        let arr = SparseBinaryMatrix::from_2d_array(example);
         let output = arr.ordered_points_rows()
             .map(|row| row.collect::<Vec<_>>())
             .collect::<Vec<_>>();

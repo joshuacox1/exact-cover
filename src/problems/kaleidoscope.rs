@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use image::{RgbImage, Rgb};
 
-use crate::{ExactCoverProblem, ExactCover, ExactCoverSolver};
+use crate::{ExactCoverProblem, ExactCoverSolver, SolverStep};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Colour { Black, Red, Blue, Yellow }
@@ -299,12 +299,25 @@ pub fn kaleidoscope_cover(board: &Board) {
     //     // }
     //     // println!("{em:0128b}");
     // }
-    solver.for_solutions(|_| {
-        y += 1;
-        if y % 100_000 == 0 {
-            println!("Churned through {y} solutions...");
+    loop {
+        solver.advance_step();
+        match solver.get_step() {
+            None => break,
+            Some(SolverStep::ReportSolution) => {
+                y += 1;
+                if y % 100_000 == 0 {
+                    println!("Churned through {y} solutions...");
+                }
+            },
+            _ => (),
         }
-    }, None);
+    }
+    // solver.for_solutions(|_| {
+    //     y += 1;
+    //     if y % 100_000 == 0 {
+    //         println!("Churned through {y} solutions...");
+    //     }
+    // }, None);
     println!("{y} solutions in total.");
 
 

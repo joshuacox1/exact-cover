@@ -3,7 +3,7 @@
 //! TODO: an example of calling the solver.
 
 mod problem;
-mod iterators;
+// mod iterators;
 mod output;
 mod representable;
 mod solver;
@@ -11,7 +11,7 @@ mod tests;
 
 pub use problem::{ExactCoverProblem, ExactCoverProblemError,
 SparseBinaryMatrix};
-pub use iterators::{Solutions, SolverSteps};
-pub use output::{ExactCover, PartialCover, SolverStep};
+// pub use iterators::{Solutions, SolverSteps};
+pub use output::{SolverStep};
 pub use solver::ExactCoverSolver;
-pub use representable::ExactCoverRepresentable;
+// pub use representable::ExactCoverRepresentable;
